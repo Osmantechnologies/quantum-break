@@ -95,6 +95,21 @@ footer .fl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--s
 .roomcard{position:relative;display:block;border:1px solid var(--line);overflow:hidden;border-radius:2px}
 .roomcard img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;transition:transform .8s ease}
 .roomcard:hover img{transform:scale(1.03)}
+.roomlive{display:grid;grid-template-columns:1fr;gap:12px}
+.roomview{position:relative;border:1px solid var(--line);overflow:hidden;border-radius:2px;background:#000;aspect-ratio:16/10}
+.roomview iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.reports{border:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0;font-size:12px}
+.reports header{display:flex;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line)}
+.reports header span{color:var(--mut)}
+.rp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 12px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.rp-stats i{display:block;font-style:normal;font-size:10px;color:var(--mut);letter-spacing:.5px}
+.rp-stats b{font-weight:600;font-variant-numeric:tabular-nums}
+.rp-feed{padding:10px 12px;overflow:auto;max-height:340px;display:flex;flex-direction:column;gap:6px}
+.rp-feed .ln{color:var(--sec);line-height:1.5}
+.rp-feed .ln b{color:var(--txt);font-weight:600;margin-right:6px}
+.rp-feed .ln.queen{color:var(--txt)}
+.rp-feed .ln time{color:var(--mut);margin-right:6px}
+@media(min-width:900px){.roomlive{grid-template-columns:1.75fr 1fr}.roomview{aspect-ratio:auto;min-height:440px}.rp-feed{max-height:none;flex:1}}
 .roomcta{position:absolute;left:16px;bottom:16px;background:var(--btn);color:var(--btnt);font-weight:600;padding:11px 16px;border-radius:2px}
 .stage{position:relative;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#0e0e10;overflow:hidden;width:100vw;margin-left:calc(50% - 50vw)}
 .stage canvas{display:block;width:100%;height:min(72vh,720px)}
@@ -147,7 +162,14 @@ footer .fl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--s
 <section id="room">
   <h2>The Quantum Room</h2>
   <p class="lead">Where the flies live: a hall of rigs and racks you can walk through in 3D, with the colony's log running beside it.</p>
-  <a class="roomcard" href="room.html"><img src="art/room-preview.webp" alt="The Quantum Room: a black and white hall of mining rigs and server racks with flies between them" loading="lazy"><span class="roomcta">Launch Quantum Room →</span></a>
+  <div class="roomlive">
+    <div class="roomview"><iframe src="room.html?embed=1" title="The Quantum Room, live" loading="lazy" allow="fullscreen"></iframe><a class="roomcta" href="room.html">Open full room →</a></div>
+    <aside class="reports" aria-label="Colony reports">
+      <header><b>COLONY REPORTS</b><span id="rp-count">0 reports</span></header>
+      <div class="rp-stats" id="rp-stats"></div>
+      <div class="rp-feed" id="rp-feed" aria-live="polite"><p class="small">Waiting for the room to wake…</p></div>
+    </aside>
+  </div>
 </section>
 
 <section id="runs">
@@ -355,6 +377,18 @@ drawMap();tape();ladder();
 <script>
 // The hunt stage was removed (2026-10-10); the search still reports to this no-op.
 const Hunt={commit(){},progress(){},done(){},set3d(){},get(){return {}}};
+</script>
+<script>
+// Colony reports: mirror the embedded Quantum Room's log and hall stats into the main page
+(()=>{const feed=document.getElementById('rp-feed'),st=document.getElementById('rp-stats'),cnt=document.getElementById('rp-count');let n=0;
+ const hms=s=>[Math.floor(s/3600),Math.floor(s/60)%60,Math.floor(s)%60].map(x=>String(x).padStart(2,'0')).join(':');
+ const cell=(k,v)=>`<div><i>${k}</i><b>${v}</b></div>`;
+ addEventListener('message',e=>{const m=e.data;if(e.origin!==location.origin||!m||m.src!=='quantum-room')return;
+  if(m.type==='stats'){st.innerHTML=cell('HALL TEMP',m.temp.toFixed(1)+' °C')+cell('FAN SPEED',Math.round(m.rpm).toLocaleString()+' rpm')+cell('POWER',m.kw.toFixed(1)+' kW')+cell('HUMIDITY',Math.round(m.hum)+' %')+cell('AIRBORNE',m.air+' / '+m.total)+cell('UPTIME',hms(m.up));}
+  if(m.type==='line'){if(!n)feed.innerHTML='';n++;cnt.textContent=n+(n===1?' report':' reports');
+   const d=document.createElement('div');d.className='ln '+m.rank;const t=document.createElement('time');t.textContent=new Date().toTimeString().slice(0,8);
+   const w=document.createElement('b');w.textContent=m.who;d.append(t,w,m.text);feed.prepend(d);while(feed.children.length>120)feed.lastChild.remove();}
+ });})();
 </script>
 </body>
 </html>

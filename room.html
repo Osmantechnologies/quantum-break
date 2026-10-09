@@ -38,6 +38,14 @@
   .hive.min .ranks, .hive.min .log, .hive.min .stats { display: none; }
   .hive.min { bottom: auto; }
   @keyframes hive-in { from { opacity: 0; transform: translateY(4px); } }
+  body.embed .back { display: none; }
+  body.embed .hive { top: 10px; right: 10px; left: auto; bottom: auto; width: 230px; height: auto; font-size: 10px; }
+  body.embed .hive .ranks { display: none; }
+  body.embed .hive .stats { grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+  body.embed .hive .stats b { font-size: 11.5px; }
+  body.embed .hive .log { max-height: 66px; }
+  body.embed .hive .ln:nth-last-child(n+4) { display: none; }
+  @media (max-width: 520px) { body.embed .hive { width: 170px; top: 8px; right: 8px; } body.embed .hive .stats { display: none; } body.embed .hive .ln:nth-last-child(n+3) { display: none; } }
   .back { position: fixed; left: 14px; top: 14px; z-index: 5; font: 600 12px "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .5px;
     color: #d6d6d9; text-decoration: none; background: #0a0a0bcc; border: 1px solid #2a2a2e; padding: 8px 12px; backdrop-filter: blur(6px); }
   .back img { float: left; width: 34px; height: 34px; margin: 0 10px 0 -2px; }
@@ -470,6 +478,9 @@ const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, 
   flyState.forEach((f, i) => { f.rank = rankOf(i); if (i === 0) f.s *= 1.7; else if (i <= FOREMEN) f.s *= 1.25; });
   const members = r => flyState.filter(f => f.rank === r);
 
+  const EMBED = new URLSearchParams(location.search).has('embed') && window.parent !== window;
+  if (EMBED) document.body.classList.add('embed');
+  const relay = msg => { if (EMBED) try { window.parent.postMessage({ src: 'quantum-room', ...msg }, location.origin); } catch (e) {} };
   const hive = document.querySelector('.hive');
   hive.querySelector('.ranks').innerHTML =
     `<span>Queen</span><span>1</span><span>Foremen</span><span>${FOREMEN}</span><span>Workers</span><span>${FLY_N - 1 - FOREMEN}</span>`;
@@ -487,6 +498,7 @@ const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, 
     const temp = drift(31.8, 1.4, 0.05, 0.4), rpm = drift(2850, 260, 0.08, 1.1), kw = drift(48.6, 3.2, 0.04, 2.0), hum = drift(38, 4, 0.03, 0.7);
     const air = flyState.filter(f => f.p.y > 0.6).length;
     Object.assign(hall, { temp, rpm, kw, hum, air });
+    relay({ type: 'stats', temp, rpm, kw, hum, air, total: FLY_N, up: (performance.now() - t0) / 1000 });
     statsEl.innerHTML =
       cell('HALL TEMP', temp.toFixed(1) + ' °C', (temp - 20) / 20 * 100) +
       cell('FAN SPEED', Math.round(rpm).toLocaleString() + ' rpm', rpm / 4000 * 100) +
@@ -612,6 +624,7 @@ const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, 
     if (rank !== 'worker') text = text[0].toUpperCase() + text.slice(1); // workers mumble in lower case
     ln.append(tag, text);
     log.append(ln);
+    relay({ type: 'line', rank, who, text });
     while (log.children.length > 30) log.firstChild.remove();
   }
   const tick = () => { say(); setTimeout(tick, 2500 + Math.random() * 1500); };
