@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>cracker · the honest Q-Day meter</title>
+<meta name="description" content="Every run breaks a bigger key, live in your browser, with proof. See how far that is from Bitcoin's 256 bits.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0d;--panel:#161618;--panel2:#1d1d20;--line:#2a2a2e;--txt:#d6d6d9;--sec:#9a9aa1;--mut:#67676e;--btn:#d6d6d9;--btnt:#0c0c0d;--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);overflow-x:hidden}
+body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;padding-top:var(--sat)}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--txt);padding:11px 16px;border-radius:2px;font-weight:600}
+button.pri{background:var(--btn);color:var(--btnt);border-color:var(--btn)}
+button:disabled{opacity:.4;cursor:default}
+.wrap{max-width:1136px;margin:0 auto;padding:0 20px}
+nav{display:flex;align-items:center;gap:18px;height:62px;border-bottom:1px solid var(--line)}
+nav .brand{font-weight:700;font-size:20px;display:flex;align-items:center;gap:10px}
+nav .brand i{display:inline-grid;grid-template-columns:repeat(4,4px);gap:2px}
+nav .brand i b{width:4px;height:4px;background:var(--txt);display:block}
+nav .links{display:flex;gap:4px;margin-left:8px}
+nav .links a{padding:7px 10px;border:1px solid transparent;border-radius:2px;color:var(--sec);font-size:14px}
+nav .links a.on{border-color:var(--line);color:var(--txt)}
+nav .right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--sec)}
+nav .right .live::before{content:"";display:inline-block;width:7px;height:7px;background:var(--txt);margin-right:7px;vertical-align:1px}
+.tape{border-bottom:1px solid var(--line);background:#111113;overflow:hidden;white-space:nowrap;height:36px;line-height:36px;font-size:13px}
+.tape .in{display:inline-block;animation:tape 40s linear infinite}
+.tape span{display:inline-block;padding:0 18px;border-right:1px solid var(--line)}
+.tape b{font-weight:700;margin-right:8px}
+@keyframes tape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.hero{display:grid;grid-template-columns:1fr;gap:28px;padding:48px 0 40px;align-items:center}
+h1{font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.5px}
+.hero p.sub{color:var(--sec);margin:18px 0 24px;max-width:560px;font-size:15px}
+.hero p.sub b{color:var(--txt);font-weight:600}
+.cta{display:flex;gap:10px;flex-wrap:wrap}
+.map{justify-self:center;display:grid;grid-template-columns:repeat(16,1fr);gap:5px;width:min(100%,380px);aspect-ratio:1}
+.map i{display:block;aspect-ratio:1;border:1px solid var(--line);border-radius:1px;background:transparent}
+.map i.b{background:var(--txt);border-color:var(--txt)}
+.map i.r{background:var(--sec);animation:blink .6s steps(2) infinite}
+.map i.t{border-color:var(--sec);box-shadow:inset 0 0 0 1px var(--sec)}
+@keyframes blink{50%{opacity:.25}}
+.maplbl{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-top:8px;width:min(100%,380px);justify-self:center}
+h2{font-size:30px;font-weight:700;margin-bottom:6px}
+section{padding:36px 0;border-top:1px solid var(--line)}
+.lead{color:var(--sec);margin-bottom:18px;max-width:640px}
+.run{border:1px solid var(--line);background:var(--panel);padding:16px;border-radius:2px;margin-bottom:18px}
+.run .row{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px}
+.run .k{color:var(--mut);font-size:12px;display:block}
+.run .v{font-weight:600}
+.big{font-size:28px;font-weight:700;line-height:1.1}
+.bar{height:6px;background:var(--panel2);margin:14px 0 6px;position:relative;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--txt);transition:width .25s linear}
+.hex{word-break:break-all;color:var(--sec);font-size:12px}
+.pill{display:inline-block;border:1px solid var(--line);padding:2px 8px;font-size:12px;color:var(--sec);border-radius:2px}
+.pill.ok{color:var(--txt);border-color:var(--txt)}
+.cards{display:grid;grid-template-columns:1fr;gap:10px}
+.card{border:1px solid var(--line);background:var(--panel);padding:14px;border-radius:2px}
+.card .t{display:flex;justify-content:space-between;align-items:baseline}
+.card .t b{font-size:22px}
+.card .why{color:var(--sec);font-size:13px;margin-top:6px}
+.card .m{font-size:12px;color:var(--mut);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--line);background:var(--panel)}
+th{color:var(--mut);font-weight:500;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:12px}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tw{overflow:auto;border-radius:2px}
+tr.done td{color:var(--txt)} tr.proj td{color:var(--sec)}
+tr.now td{background:var(--panel2)}
+.tag{font-size:11px;border:1px solid var(--line);padding:1px 6px;color:var(--mut)}
+.tag.m{color:var(--txt);border-color:var(--sec)}
+pre.rep{white-space:pre-wrap;border:1px solid var(--line);background:var(--panel);padding:16px;font-size:13px;color:var(--txt);border-radius:2px;line-height:1.6}
+.meth p{color:var(--sec);margin-bottom:12px;max-width:720px}
+.meth p b{color:var(--txt)}
+.two{display:grid;grid-template-columns:1fr;gap:16px}
+.box{border:1px solid var(--line);padding:16px;background:var(--panel)}
+.box h3{font-size:14px;color:var(--mut);font-weight:500;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.box li{margin-left:18px;color:var(--sec);margin-bottom:4px}
+.box li b{color:var(--txt)}
+footer{padding:28px 0 calc(90px + var(--sab));color:var(--mut);font-size:12px;border-top:1px solid var(--line)}
+footer .fl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--sec)}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:#0c0c0dee;border-top:1px solid var(--line);padding-bottom:var(--sab);backdrop-filter:blur(8px);z-index:9}
+.tabs a{flex:1;text-align:center;padding:14px 0;font-size:13px;color:var(--sec)}
+.tabs a.on{color:var(--txt);font-weight:700}
+.sel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.sel button{padding:7px 11px;font-size:13px;font-weight:500}
+.sel button.on{background:var(--panel2);border-color:var(--sec)}
+.small{font-size:12px;color:var(--mut)}
+.roomcard{position:relative;display:block;border:1px solid var(--line);overflow:hidden;border-radius:2px}
+.roomcard img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;transition:transform .8s ease}
+.roomcard:hover img{transform:scale(1.03)}
+.roomcta{position:absolute;left:16px;bottom:16px;background:var(--btn);color:var(--btnt);font-weight:600;padding:11px 16px;border-radius:2px}
+.stage{position:relative;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#0e0e10;overflow:hidden;width:100vw;margin-left:calc(50% - 50vw)}
+.stage canvas{display:block;width:100%;height:min(72vh,720px)}
+.stage #stage3d{position:absolute;left:0;top:0;opacity:0;transition:opacity .8s}
+.stage.gl #stage3d{opacity:1}
+.stage #stage{position:relative;pointer-events:none}
+.stage #stage3d{cursor:grab;touch-action:pan-y}
+.stage #stage3d:active{cursor:grabbing}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px}
+.toast{position:absolute;left:50%;top:30px;transform:translate(-50%,0) scale(.7);opacity:0;pointer-events:none;text-align:center;background:#0c0c0dee;border:1px solid var(--txt);padding:9px 16px;min-width:230px;transition:transform .35s cubic-bezier(.2,1.4,.3,1),opacity .25s}
+.toast.on{transform:translate(-50%,0) scale(1);opacity:1}
+.toast b{display:block;font-size:21px;letter-spacing:1px}
+.toast span{display:block;font-size:12px;color:var(--sec);margin-top:4px}
+@media(max-width:899px){.stage canvas{height:62vh}}
+@media(min-width:900px){
+  .hero{grid-template-columns:1.1fr .9fr;padding:64px 0 56px}
+  h1{font-size:60px}
+  .cards{grid-template-columns:repeat(4,1fr)}
+  .two{grid-template-columns:1fr 1fr}
+  .tabs{display:none}
+  footer{padding-bottom:40px}
+}
+@media(max-width:899px){nav .links,nav .right .live{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <a class="brand" href="#top"><i><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i>cracker</a>
+  <div class="links"><a href="#top" class="on">Meter</a><a href="#runs">Runs</a><a href="#ladder">Ladder</a><a href="#board">Board</a><a href="#method">Method</a><a href="room.html">Quantum Room</a></div>
+  <div class="right"><span class="live" id="navlive">Idle</span><button class="pri" id="navgo">Start the climb</button></div>
+</nav>
+</div>
+<div class="tape"><div class="in" id="tape"></div></div>
+
+<main class="wrap" id="top">
+<div class="hero">
+  <div>
+    <h1>Every run breaks a bigger key.</h1>
+    <p class="sub" id="sub">Press start. Your browser will crack a real key, then a bigger one, then a bigger one, and publish the proof each time. <b>Bitcoin keys are 256 bits.</b> Watch how fast the wall goes up.</p>
+    <div class="cta"><button class="pri" id="go">Start the climb</button><button id="one">Break one key</button><a href="room.html"><button>Launch Quantum Room</button></a></div>
+    <div class="sel" id="bitsel" style="margin-top:14px;display:none"></div>
+  </div>
+  <div>
+    <div class="map" id="map"></div>
+    <div class="maplbl"><span>1 bit</span><span id="maplbl2">0 broken · 256 to go</span><span>256 bits</span></div>
+  </div>
+</div>
+
+<section id="room">
+  <h2>The Quantum Room</h2>
+  <p class="lead">Where the flies live: a hall of rigs and racks you can walk through in 3D, with the colony's log running beside it.</p>
+  <a class="roomcard" href="room.html"><img src="art/room-preview.webp" alt="The Quantum Room: a black and white hall of mining rigs and server racks with flies between them" loading="lazy"><span class="roomcta">Launch Quantum Room →</span></a>
+</section>
+
+<section id="runs">
+  <h2>Runs</h2>
+  <p class="lead">Each run: the public key is shown first, then the search starts. When the private key is found, the page checks that key × G equals the public key. Nothing here is simulated.</p>
+  <div class="run" id="live">
+    <div class="row"><div><span class="k">status</span><span class="v" id="st">waiting</span></div><div><span class="k">bits</span><span class="v big" id="lb">—</span></div><div><span class="k">hops</span><span class="v" id="lh">0</span></div><div><span class="k">hops / s</span><span class="v" id="ls">0</span></div><div><span class="k">elapsed</span><span class="v" id="lt">0.0 s</span></div><div><span class="k">expected</span><span class="v" id="le">—</span></div></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="hex" id="lpub">public key: —</div>
+    <div class="hex" id="lpriv"></div>
+  </div>
+  <div class="cards" id="cards"></div>
+  <div class="tw" style="margin-top:14px"><table id="runtab"><thead><tr><th>#</th><th>bits</th><th>public key</th><th class="n">hops</th><th class="n">time</th><th class="n">hops/s</th><th>private key</th><th>check</th></tr></thead><tbody id="runbody"><tr><td colspan="8" class="small">No runs yet.</td></tr></tbody></table></div>
+</section>
+
+<section id="ladder">
+  <h2>The ladder</h2>
+  <p class="lead">Expected work for the best known attack (Pollard's kangaroo) is about 2<sup>bits/2</sup> hops. Every 2 extra bits doubles it. Rows marked <span class="tag m">measured</span> happened in this browser. Everything else is arithmetic from published speeds, not a claim.</p>
+  <div class="tw"><table><thead><tr><th>bits</th><th class="n">expected hops</th><th class="n">this browser</th><th class="n">one RTX 4090</th><th class="n">record rig (135-bit solve)</th><th>status</th></tr></thead><tbody id="ladbody"></tbody></table></div>
+  <p class="small" style="margin-top:10px">Speeds: this browser = measured live. RTX 4090 = 14.5 GH/s (RCKangaroo, published). Record rig = whatever solved the 135-bit puzzle in about 5 months (reported July 2026), calibrated from that result to ≈32 TH/s, so its 135 row reads 5 months by construction. Quantum hardware's public record: a 15-bit key (Project Eleven Q-Day Prize, April 2026).</p>
+</section>
+
+<section id="board">
+  <h2>The board</h2>
+  <p class="lead">Outside numbers this meter is measured against. We are not hunting any of these. They are the scoreboard, quoted with their source.</p>
+  <div class="tw"><table><thead><tr><th>item</th><th class="n">value</th><th>what it means</th><th>quoted through</th></tr></thead><tbody>
+    <tr><td>Bitcoin key size</td><td class="n">256 bits</td><td>The wall. 2<sup>128</sup> hops with the known attack.</td><td>secp256k1</td></tr>
+    <tr><td>Puzzle #71</td><td class="n">7.1 BTC · unsolved</td><td>Next prize in the 2015 puzzle challenge. No public key exposed, so brute force only: ~25,000 GPU-years.</td><td>btcpuzzle.info · 2026-10</td></tr>
+    <tr><td>Puzzle #135</td><td class="n">13.5 BTC · solved</td><td>Current record: reported ~5 months of GPU work, July 2026.</td><td>Bitcoin-Puzzle-Info · 2026-07-28</td></tr>
+    <tr><td>Puzzles unsolved</td><td class="n">~916 BTC</td><td>Still sitting in the challenge wallets.</td><td>bitcoin.com · 2026-08</td></tr>
+    <tr><td>BTC on exposed keys</td><td class="n">7,110,382 BTC</td><td>Coins whose public key is already on chain (≈ $581B). Drake's "bunker mode" is about these.</td><td>Project Eleven risq list · 2026-10-09</td></tr>
+    <tr><td>Quantum record</td><td class="n">15 bits</td><td>Largest elliptic-curve key broken on quantum hardware for a public prize.</td><td>Project Eleven Q-Day Prize · 2026-04</td></tr>
+  </tbody></table></div>
+</section>
+
+<section id="report">
+  <h2>Report</h2>
+  <p class="lead">Written from this session's real runs. Copy it, post it.</p>
+  <pre class="rep" id="rep">No runs yet. Start the climb and the report writes itself.</pre>
+  <div class="cta" style="margin-top:12px"><button id="copy">Copy report</button></div>
+</section>
+
+<section id="method" class="meth">
+  <h2>Method</h2>
+  <p>A private key is a number. The public key is that number times a fixed point G on a curve. Going forward is easy; going back is the hard problem that protects every Bitcoin and Ethereum wallet.</p>
+  <p><b>Kangaroo</b> is the best known way back when you know the key lives in a range. Two herds of "kangaroos" hop along the curve, one from a known position, one from the public key. When they land on the same spot, the distance between their starting points is the key. It costs about the square root of the range: 2<sup>bits/2</sup> hops.</p>
+  <p>This page makes a random key in a chosen range, shows you the public key <b>before</b> searching, runs kangaroo in a web worker, and then checks the answer by multiplying it back. The ladder scales the measured speed to published GPU speeds. The arithmetic is simple; the sizes are what matter.</p>
+  <div class="two">
+    <div class="box"><h3>What this shows</h3><ul><li><b>Real cost</b> of the known attack at every size, measured where we can and computed where we can't.</li><li>That each 2 bits <b>doubles</b> the work, which is why 256 is not "a bit more" than 128.</li><li>Proof for every run: anyone can multiply the private key by G and compare.</li></ul></div>
+    <div class="box"><h3>What this does not show</h3><ul><li>Nothing about whether AI will find a <b>new</b> shortcut. This measures the attack we have.</li><li>We never touch anyone's wallet. Every key here is ours, made seconds earlier.</li><li>We are <b>not hunting</b> the puzzle wallets. On this page they are a scoreboard.</li></ul></div>
+  </div>
+</section>
+
+<footer>
+  <div class="fl"><a href="#top">Meter</a><a href="#runs">Runs</a><a href="#ladder">Ladder</a><a href="#board">Board</a><a href="#method">Method</a></div>
+  cracker · the honest Q-Day meter · every number on this page is measured in your browser or quoted with its source · build v0.2.0
+</footer>
+</main>
+
+<div class="tabs"><a href="#top" class="on">Meter</a><a href="#runs">Runs</a><a href="#ladder">Ladder</a><a href="room.html">Room</a><a href="#method">Method</a></div>
+
+<script id="wk" type="text/plain">
+// ===== secp256k1 + Pollard kangaroo (parallel herds, batched inversion) =====
+const P=(1n<<256n)-(1n<<32n)-977n, N=0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
+const G=[0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798n,0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n];
+const mod=(a,m=P)=>{a%=m;return a<0n?a+m:a};
+function inv(a,m=P){let g=mod(a,m),x=1n,g1=m,x1=0n;while(g1){const q=g/g1;[g,g1]=[g1,g-q*g1];[x,x1]=[x1,x-q*x1];}return mod(x,m)}
+function add(a,b){if(!a)return b;if(!b)return a;let l;
+ if(a[0]===b[0]){if(mod(a[1]+b[1])===0n)return null;l=mod(3n*a[0]*a[0]*inv(2n*a[1]));}
+ else l=mod((b[1]-a[1])*inv(b[0]-a[0]));
+ const x=mod(l*l-a[0]-b[0]);return [x,mod(l*(a[0]-x)-a[1])];}
+function mul(k,p){let r=null,q=p;k=mod(k,N);while(k>0n){if(k&1n)r=add(r,q);q=add(q,q);k>>=1n;}return r}
+const hex=(n,w=64)=>n.toString(16).padStart(w,'0');
+const comp=p=>((p[1]&1n)?'03':'02')+hex(p[0]);
+function rnd(bits){const bytes=new Uint8Array(Math.ceil(bits/8));crypto.getRandomValues(bytes);let v=0n;for(const b of bytes)v=(v<<8n)|BigInt(b);return v&((1n<<BigInt(bits))-1n);}
+
+function kangaroo(pub,start,bits,report){
+ const range=1n<<BigInt(bits);
+ const K=bits<=24?8:64;                                   // kangaroos per herd
+ const mid=start+(range>>1n);
+ // jump table: powers of two, mean ≈ m·sqrt(range)/4 for m parallel kangaroos (van Oorschot–Wiener)
+ const target=2*K*Math.pow(2,bits/2)/4;let M=1;
+ while((Math.pow(2,M+1)-1)/(M+1)<target&&M<60)M++;
+ const nJ=M+1;const jumps=[],jumpP=[];
+ for(let i=0;i<nJ;i++){const j=1n<<BigInt(i);jumps.push(j);jumpP.push(mul(j,G));}
+ const dpBits=Math.max(0,Math.floor(bits/2)-9);const dpMask=(1n<<BigInt(dpBits))-1n;
+ const spreadBits=Math.max(1,M-2);                        // start offsets: random, smaller than the mean jump
+ const tame=[],wild=[];
+ const seedT=i=>{const d=mid+rnd(spreadBits);return {p:mul(d,G),d};};
+ const seedW=i=>{const d=rnd(spreadBits);return {p:add(pub,mul(d,G)),d};};
+ for(let i=0;i<K;i++){tame.push(seedT(i));wild.push(seedW(i));}
+ const tMap=new Map(),wMap=new Map();
+ let hops=0,t0=Date.now(),last=t0;
+ const expected=Math.pow(2,bits/2+1);
+ // stage feed: real positions of the first 24 agents in each herd (tame: offset from range start; wild: distance from the unknown key)
+ const S=Math.min(K,24);const mj=Number(jumps.reduce((a,b)=>a+b,0n)/BigInt(nJ));let nd=[];
+ const snap=()=>({hops,ms:Date.now()-t0,expected,mj,t:tame.slice(0,S).map(o=>Number(o.d-start)),w:wild.slice(0,S).map(o=>Number(o.d)),nd:nd.splice(0),dps:tMap.size+wMap.size,x:hex(tame[0].p[0]).slice(0,16)});
+ report(snap());
+ function stepHerd(h,J){ // batched add of jump points
+  const d=new Array(K),pre=new Array(K);let acc=1n;
+  for(let i=0;i<K;i++){const jp=J[i];const p=h[i].p;let dd=mod(jp[0]-p[0]);if(dd===0n)dd=1n;d[i]=dd;pre[i]=acc;acc=mod(acc*dd);}
+  let ia=inv(acc);
+  for(let i=K-1;i>=0;i--){const di=mod(ia*pre[i]);ia=mod(ia*d[i]);const p=h[i].p,jp=J[i];
+   if(p[0]===jp[0]){h[i].p=add(p,jp);continue;} // rare: fall back
+   const l=mod((jp[1]-p[1])*di);const x=mod(l*l-p[0]-jp[0]);h[i].p=[x,mod(l*(p[0]-x)-p[1])];}
+ }
+ while(true){
+  const JT=new Array(K),JW=new Array(K);
+  for(let i=0;i<K;i++){const it=Number(tame[i].p[0]%BigInt(nJ)),iw=Number(wild[i].p[0]%BigInt(nJ));JT[i]=jumpP[it];tame[i].d+=jumps[it];JW[i]=jumpP[iw];wild[i].d+=jumps[iw];}
+  stepHerd(tame,JT);stepHerd(wild,JW);hops+=2*K;
+  for(let i=0;i<K;i++){
+   const tp=tame[i].p,wp=wild[i].p;
+   if((tp[0]&dpMask)===0n){const k=hex(tp[0]);if(tMap.has(k)){if(tMap.get(k)!==tame[i].d)tame[i]=seedT(i);}else{tMap.set(k,tame[i].d);nd.push(['t',Number(tame[i].d-start)]);if(wMap.has(k)){const key=mod(tame[i].d-wMap.get(k),N);if(check(key))return {key,hops,ms:Date.now()-t0,meetT:Number(tame[i].d-start),meetW:Number(wMap.get(k)),mj};}}}
+   if((wp[0]&dpMask)===0n){const k=hex(wp[0]);if(wMap.has(k)){if(wMap.get(k)!==wild[i].d)wild[i]=seedW(i);}else{wMap.set(k,wild[i].d);nd.push(['w',Number(wild[i].d)]);if(tMap.has(k)){const key=mod(tMap.get(k)-wild[i].d,N);if(check(key))return {key,hops,ms:Date.now()-t0,meetT:Number(tMap.get(k)-start),meetW:Number(wild[i].d),mj};}}}
+  }
+  const now=Date.now();if(now-last>90){last=now;report(snap());}
+ }
+ function check(k){const q=mul(k,G);return q&&q[0]===pub[0]&&q[1]===pub[1];}
+}
+self.onmessage=e=>{
+ const {bits,id}=e.data;
+ const start=1n<<BigInt(bits-1);
+ const key=start+rnd(bits-1);
+ const pub=mul(key,G);
+ self.postMessage({id,type:'commit',bits,pub:comp(pub),start:hex(start,1)});
+ const res=kangaroo(pub,start,bits,r=>self.postMessage({id,type:'progress',...r}));
+ const ok=comp(mul(res.key,G))===comp(pub);
+ self.postMessage({id,type:'done',bits,pub:comp(pub),key:hex(res.key),hops:res.hops,ms:res.ms,ok,meetT:res.meetT,meetW:res.meetW,keyOff:Number(res.key-start),mj:res.mj,range:Number(1n<<BigInt(bits-1))});
+};
+</script>
+
+<script>
+const $=id=>document.getElementById(id);
+const NAME='cracker';
+const GPU4090=14.5e9;
+const RIG=Math.pow(2,135/2+1)/(5*30*86400);   // calibrated: the 135-bit record took ~5 months → ≈32 TH/s
+const LADDER=[16,24,32,40,48,56,64,72,80,88,96,100,110,120,128,135,160,256];
+const CLIMB=[16,20,24,28,32,36,40,44,48];
+const PHONE=matchMedia('(max-width:899px)').matches;
+const runs=[];let worker,running=false,climbing=false,climbIdx=0,best=0,speed=0,liveBits=0,liveHops=0;
+
+// ----- map
+const map=$('map');for(let i=0;i<256;i++){const d=document.createElement('i');d.title=(i+1)+' bits';map.appendChild(d);}
+function drawMap(){const cells=map.children;for(let i=0;i<256;i++){const b=i+1;cells[i].className=b<=best?'b':(b===liveBits&&running?'r':(b===256?'t':''));}
+ $('maplbl2').textContent=`${best} broken · ${256-best} to go`;}
+
+// ----- tape
+function tape(){const items=[
+ ['TODAY',best?`${best} BITS`:'0 BITS'],['BROWSER',speed?fmtS(speed)+' hops/s':'idle'],['BTC','256 BITS'],['GAP',best?`2^${(256-best)/2|0} × TODAY`:'—'],
+ ['4090','14.5 GH/s'],['RECORD','135 BITS · 5 MONTHS'],['PUZZLE #71','7.1 BTC UNSOLVED'],['EXPOSED BTC','7,110,382'],['QUANTUM','15 BITS']];
+ const h=items.map(([k,v])=>`<span><b>${k}</b>${v}</span>`).join('');$('tape').innerHTML=h+h;}
+const fmtS=n=>n>=1e9?(n/1e9).toFixed(1)+'G':n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':Math.round(n)+'';
+function fmtT(s){if(!isFinite(s))return '∞';if(s<1)return (s*1000).toFixed(0)+' ms';if(s<60)return s.toFixed(1)+' s';if(s<3600)return (s/60).toFixed(1)+' min';if(s<86400)return (s/3600).toFixed(1)+' h';if(s<86400*365)return (s/86400).toFixed(1)+' days';const y=s/(86400*365);return y<1e6?y.toFixed(0)+' years':y.toExponential(1)+' years';}
+const hopsFor=b=>Math.pow(2,b/2+1);
+
+// ----- ladder
+function ladder(){const tb=$('ladbody');tb.innerHTML='';for(const b of LADDER){const h=hopsFor(b);const done=runs.filter(r=>r.bits===b&&r.ok);
+ const tr=document.createElement('tr');tr.className=done.length?'done':(b===liveBits&&running?'now':'proj');
+ const mine=done.length?fmtT(done[done.length-1].ms/1000):(speed?fmtT(h/speed):'—');
+ const st=done.length?`<span class="tag m">measured</span> broken ${done.length>1?done.length+'×':''}`:(b===liveBits&&running?'<span class="tag">running</span>':(b<=48?'<span class="tag">next</span>':(b<=100?'<span class="tag">GPU range</span>':'<span class="tag">out of reach</span>')));
+ tr.innerHTML=`<td>${b}</td><td class="n">2^${(b/2+1).toFixed(0)}</td><td class="n">${mine}</td><td class="n">${fmtT(h/GPU4090)}</td><td class="n">${fmtT(h/RIG)}</td><td>${st}</td>`;tb.appendChild(tr);}}
+
+// ----- runs ui
+function startRun(bits){if(running)return;running=true;liveBits=bits;liveHops=0;
+ if(!worker){const src=$('wk').textContent;worker=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'})));worker.onmessage=onMsg;}
+ $('st').textContent='generating key';$('lb').textContent=bits;$('lh').textContent='0';$('lt').textContent='0.0 s';$('le').textContent='~2^'+(bits/2+1).toFixed(0)+' hops';$('bar').style.width='0';$('lpriv').textContent='';$('lpub').textContent='public key: —';
+ $('navlive').textContent='Running · '+bits+' bits';$('go').disabled=true;$('one').disabled=true;$('navgo').disabled=true;
+ drawMap();ladder();worker.postMessage({bits,id:runs.length+1});}
+function onMsg(e){const m=e.data;
+ if(m.type==='commit'){Hunt.commit(m);$('st').textContent='searching';$('lpub').textContent='public key (published before the search): '+m.pub;$('sub').innerHTML=`Searching a <b>${m.bits}-bit</b> range for the key behind <b>${m.pub.slice(0,18)}…</b>. Bitcoin keys are 256 bits.`;}
+ if(m.type==='progress'){Hunt.progress(m);liveHops=m.hops;speed=m.hops/(m.ms/1000);$('lh').textContent=fmtS(m.hops);$('ls').textContent=fmtS(speed);$('lt').textContent=(m.ms/1000).toFixed(1)+' s';$('bar').style.width=Math.min(100,100*m.hops/m.expected)+'%';if(m.hops%2000<200)tape();}
+ if(m.type==='done'){Hunt.done(m);running=false;speed=m.hops/(Math.max(m.ms,1)/1000);runs.push(m);if(m.ok&&m.bits>best)best=m.bits;
+  $('st').textContent=m.ok?'found · verified':'found · CHECK FAILED';$('lh').textContent=fmtS(m.hops);$('ls').textContent=fmtS(speed);$('lt').textContent=(m.ms/1000).toFixed(2)+' s';$('bar').style.width='100%';
+  $('lpriv').textContent='private key: '+m.key.replace(/^0+/,'')+'  → key × G '+(m.ok?'= public key ✓':'≠ public key ✗');
+  $('sub').innerHTML=`Today: <b>${best} bits</b> in <b>${fmtT(m.ms/1000)}</b> on this browser. Bitcoin is <b>256</b>: about <b>2<sup>${((256-best)/2)|0}</sup></b> times that work.`;
+  $('navlive').textContent='Best · '+best+' bits';addRow(m);cards();ladder();drawMap();tape();report();
+  if(climbing){climbIdx++;const max=PHONE?44:48;if(climbIdx<CLIMB.length&&CLIMB[climbIdx]<=max){setTimeout(()=>startRun(CLIMB[climbIdx]),1700);return;}climbing=false;}
+  $('go').disabled=false;$('one').disabled=false;$('navgo').disabled=false;$('go').textContent='Climb again';$('navgo').textContent='Climb again';}}
+function addRow(m){const tb=$('runbody');if(runs.length===1)tb.innerHTML='';const tr=document.createElement('tr');
+ tr.innerHTML=`<td>${runs.length}</td><td><b>${m.bits}</b></td><td class="hex">${m.pub.slice(0,22)}…</td><td class="n">${fmtS(m.hops)}</td><td class="n">${fmtT(m.ms/1000)}</td><td class="n">${fmtS(m.hops/(Math.max(m.ms,1)/1000))}</td><td class="hex">${m.key.replace(/^0+/,'').slice(0,22)}…</td><td><span class="pill ${m.ok?'ok':''}">${m.ok?'verified':'failed'}</span></td>`;tb.prepend(tr);}
+function cards(){const last=runs.slice(-4).reverse();$('cards').innerHTML=last.map((m,i)=>{const prev=runs[runs.indexOf(m)-1];
+ const why=prev?`${m.bits-prev.bits} more bits than run ${runs.indexOf(prev)+1} = ${Math.pow(2,(m.bits-prev.bits)/2).toFixed(0)}× the expected work`:'first rung of the ladder';
+ return `<div class="card"><div class="t"><b>${m.bits} bits</b><span>${fmtT(m.ms/1000)}</span></div><div class="why">${why}</div><div class="m"><span>2^${Math.log2(m.hops).toFixed(1)} hops</span><span>${fmtS(m.hops/(Math.max(m.ms,1)/1000))}/s</span><span>${m.ok?'verified ✓':'failed'}</span></div></div>`;}).join('');}
+function report(){if(!runs.length)return;const ok=runs.filter(r=>r.ok);const top=ok.reduce((a,b)=>b.bits>a.bits?b:a,ok[0]);const tot=runs.reduce((a,r)=>a+r.ms,0)/1000;
+ const lines=[`${NAME} · session report · ${new Date().toISOString().slice(0,16).replace('T',' ')} UTC`,
+ `runs: ${runs.length} · best: ${top.bits} bits in ${fmtT(top.ms/1000)} · total ${fmtT(tot)} · ${fmtS(speed)} hops/s in this browser`,
+ ...ok.map((r,i)=>`run ${runs.indexOf(r)+1} · ${r.bits} bits · ${fmtT(r.ms/1000)} · 2^${Math.log2(r.hops).toFixed(1)} hops · verified`),
+ ``,`same browser, projected: 64 bits ${fmtT(hopsFor(64)/speed)} · 80 bits ${fmtT(hopsFor(80)/speed)} · 100 bits ${fmtT(hopsFor(100)/speed)}`,
+ `one RTX 4090: 80 bits ${fmtT(hopsFor(80)/GPU4090)} · 100 bits ${fmtT(hopsFor(100)/GPU4090)} · 128 bits ${fmtT(hopsFor(128)/GPU4090)}`,
+ `bitcoin: 256 bits = 2^${((256-top.bits)/2)|0} × today's work. 2^128 hops. ${fmtT(hopsFor(256)/RIG)} on the rig that holds the 135-bit record.`,
+ ``,`proof (best run): pub ${top.pub} · key ${top.key.replace(/^0+/,'')} · check: key × G = pub`];
+ $('rep').textContent=lines.join('\n');}
+
+// ----- controls
+function climb(){if(running)return;climbing=true;climbIdx=0;startRun(CLIMB[0]);}
+$('go').onclick=climb;$('navgo').onclick=climb;
+$('one').onclick=()=>{const s=$('bitsel');s.style.display=s.style.display==='none'?'flex':'none';};
+const sel=$('bitsel');for(const b of [16,20,24,28,32,36,40,44,48,52,56]){const bt=document.createElement('button');bt.textContent=b+' bits';bt.onclick=()=>{climbing=false;startRun(b);};sel.appendChild(bt);}
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText($('rep').textContent);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy report',1500);}catch(e){}};
+// nav highlight
+const secs=['top','runs','ladder','board','method'];
+addEventListener('scroll',()=>{let cur='top';for(const id of secs){const el=$(id);if(el&&el.getBoundingClientRect().top<140)cur=id;}document.querySelectorAll('.links a,.tabs a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));},{passive:true});
+drawMap();tape();ladder();
+</script>
+<script>
+// The hunt stage was removed (2026-10-10); the search still reports to this no-op.
+const Hunt={commit(){},progress(){},done(){},set3d(){},get(){return {}}};
+</script>
+</body>
+</html>

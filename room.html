@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Quantum Room</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  canvas#room { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
+    touch-action: none; opacity: 0; transition: opacity 1.4s ease; cursor: grab; }
+  canvas#room.on { opacity: 1; }
+  canvas#room:active { cursor: grabbing; }
+  .hive { position: fixed; right: 14px; top: 14px; bottom: 14px; width: min(360px, calc(100vw - 28px)); display: flex; flex-direction: column;
+    font: 11px/1.55 "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; color: #9a9aa1; background: #0a0a0bcc;
+    border: 1px solid #2a2a2e; backdrop-filter: blur(6px); pointer-events: auto; }
+  .hive header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #2a2a2e; color: #d6d6d9; }
+  .hive header b { letter-spacing: 1px; }
+  .hive .sim { border: 1px solid #67676e; padding: 1px 6px; font-size: 10px; color: #9a9aa1; }
+  .hive .ranks { padding: 8px 12px; border-bottom: 1px solid #2a2a2e; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+  .hive .ranks span:nth-child(even) { color: #d6d6d9; text-align: right; }
+  .hive .log { flex: 1; overflow: hidden; padding: 8px 12px; }
+  .hive header { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+  .hive .log { display: flex; flex-direction: column; justify-content: flex-end; gap: 5px; }
+  .hive .ln { animation: hive-in .5s ease both; }
+  .hive .ln:nth-last-child(n+7) { opacity: .45; }
+  .hive .who { color: #d6d6d9; letter-spacing: .5px; margin-right: 6px; }
+  .hive .ln.queen .who { color: #fff; }
+  .hive .ln.queen { color: #c4c4c8; }
+  .hive .stats { padding: 8px 12px; border-bottom: 1px solid #2a2a2e; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+  .hive .stats div { display: flex; flex-direction: column; }
+  .hive .stats i { font-style: normal; font-size: 9.5px; color: #67676e; letter-spacing: .6px; }
+  .hive .stats b { font-weight: 600; color: #d6d6d9; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .hive .stats .bar { height: 2px; background: #1d1d20; margin-top: 3px; }
+  .hive .stats .bar u { display: block; height: 100%; background: #9a9aa1; text-decoration: none; transition: width .8s; }
+  .hive.min .ranks, .hive.min .log, .hive.min .stats { display: none; }
+  .hive.min { bottom: auto; }
+  @keyframes hive-in { from { opacity: 0; transform: translateY(4px); } }
+  .back { position: fixed; left: 14px; top: 14px; z-index: 5; font: 600 12px "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .5px;
+    color: #d6d6d9; text-decoration: none; background: #0a0a0bcc; border: 1px solid #2a2a2e; padding: 8px 12px; backdrop-filter: blur(6px); }
+  .back b { display: block; font-size: 15px; letter-spacing: 1.5px; color: #fff; }
+  .back span { color: #67676e; font-weight: 400; }
+  /* phone: a short bottom sheet so the room stays visible and draggable above it */
+  @media (max-width: 600px) {
+    .hive { top: auto; left: 10px; right: 10px; width: auto; height: 32vh; bottom: calc(10px + env(safe-area-inset-bottom)); }
+    .hive.min { height: auto; bottom: calc(10px + env(safe-area-inset-bottom)); }
+  }
+</style>
+</head>
+<body>
+<canvas id="room" aria-label="A black and white machine room with flies drifting between mining rigs and server racks"></canvas>
+<a class="back" href="index.html"><b>QUANTUM ROOM</b><span>← back to the meter</span></a>
+<aside class="hive" aria-label="Fly colony log">
+  <header title="Tap to fold"><b>FLY COLONY</b><span class="sim">SIMULATION</span></header>
+  <div class="ranks"></div>
+  <div class="stats"></div>
+  <div class="log" aria-live="polite"></div>
+</aside>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
+
+const PHONE = Math.min(innerWidth, innerHeight) < 600;
+
+// ---- renderer, scene, camera
+const cv = document.getElementById('room');
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+scene.fog = new THREE.FogExp2(0x000000, 0.055);
+
+const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 80);
+camera.position.set(1.6, 2.4, 8.0);
+
+const controls = new OrbitControls(camera, cv);
+controls.target.set(0, 1.7, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.enablePan = false;
+controls.minDistance = 2.5;
+controls.maxDistance = 10.5;
+controls.minPolarAngle = Math.PI * 0.18;
+controls.maxPolarAngle = Math.PI * 0.53;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.45;
+let idleAt = 0;
+controls.addEventListener('start', () => { controls.autoRotate = false; });
+controls.addEventListener('end', () => { idleAt = performance.now(); });
+
+// ---- room dimensions
+const RX = 13, RZ = 10, RH = 6.2;
+
+// ---- textures
+const manager = new THREE.LoadingManager();
+const tl = new THREE.TextureLoader(manager);
+const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+function tex(url, rx = 1, ry = 1) {
+  const t = tl.load(url);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = aniso;
+  if (rx !== 1 || ry !== 1) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); }
+  return t;
+}
+const TILE = 3.2; // metres per circuit tile
+
+// ---- floor: a dim mirror, with the circuit texture laid over it as a semi-transparent layer
+const mirror = new Reflector(new THREE.PlaneGeometry(RX * 2, RZ * 2), {
+  textureWidth: (PHONE ? 512 : 1024), textureHeight: (PHONE ? 512 : 1024), color: 0x4a4a4e
+});
+mirror.rotation.x = -Math.PI / 2;
+mirror.position.y = 0;
+scene.add(mirror);
+const floorMat = new THREE.MeshStandardMaterial({
+  map: tex('art/room/circuit.webp', (RX * 2) / TILE, (RZ * 2) / TILE),
+  color: 0x8a8a8a, roughness: 0.5, metalness: 0.3, transparent: true, opacity: 0.7
+});
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(RX * 2, RZ * 2), floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = 0.004;
+scene.add(floor);
+
+function wall(w, h, x, z, ry) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({
+    map: tex('art/room/circuit.webp', w / TILE, h / TILE), color: 0x4a4a4a, roughness: 0.7, metalness: 0.3
+  }));
+  m.position.set(x, h / 2, z);
+  m.rotation.y = ry;
+  scene.add(m);
+}
+wall(RX * 2, RH, 0, -RZ, 0);
+wall(RX * 2, RH, 0, RZ, Math.PI);
+wall(RZ * 2, RH, -RX, 0, Math.PI / 2);
+wall(RZ * 2, RH, RX, 0, -Math.PI / 2);
+
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(RX * 2, RZ * 2), new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 }));
+ceil.rotation.x = Math.PI / 2;
+ceil.position.y = RH;
+scene.add(ceil);
+
+// ceiling light bars: over-bright white so bloom catches them
+const barMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+barMat.color.setScalar(5);
+const bars = new THREE.InstancedMesh(new THREE.BoxGeometry(0.09, 0.05, 1), barMat, 64);
+{
+  const o = new THREE.Object3D(); let n = 0;
+  for (const x of [-7.8, -3.4, 0, 3.4, 7.8]) for (let z = -8.4; z <= 8.4; z += 2.4) {
+    o.position.set(x, RH - 0.06, z); o.scale.set(1, 1, 1.9); o.updateMatrix();
+    bars.setMatrixAt(n++, o.matrix);
+  }
+  bars.count = n;
+}
+scene.add(bars);
+
+// ---- light
+scene.add(new THREE.HemisphereLight(0xffffff, 0x111111, 0.55));
+for (const [x, z] of [[0, -4.5], [0, 4.5], [-7.8, 0], [7.8, 0]]) {
+  const p = new THREE.PointLight(0xffffff, 26, 14, 1.6);
+  p.position.set(x, RH - 0.5, z);
+  scene.add(p);
+}
+
+// ---- machines: one instanced body + one instanced textured face per kind
+const bodyMat = new THREE.MeshStandardMaterial({ color: 0x161616, roughness: 0.45, metalness: 0.75 });
+function faceMat(url, glow) {
+  const t = tex(url);
+  return new THREE.MeshStandardMaterial({
+    map: t, emissiveMap: t, emissive: 0xffffff, emissiveIntensity: glow, roughness: 0.55, metalness: 0.35
+  });
+}
+const extras = []; // each effect pushes a per-frame function here; run from the loop
+const machines = []; // {x, y, z, ry, w, h, d} — also used as fly waypoints
+function addKind(list, w, h, d, faceUrl, glow, twoFaced) {
+  const body = new THREE.InstancedMesh(new THREE.BoxGeometry(w, h, d), bodyMat, list.length);
+  const faces = new THREE.InstancedMesh(new THREE.PlaneGeometry(w * 0.98, h * 0.98), faceMat(faceUrl, glow), list.length * (twoFaced ? 2 : 1));
+  const q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
+  const m = new THREE.Matrix4(), off = new THREE.Vector3();
+  let f = 0;
+  list.forEach((s, i) => {
+    q.setFromAxisAngle(up, s.ry);
+    const c = new THREE.Vector3(s.x, s.y + h / 2, s.z);
+    body.setMatrixAt(i, m.compose(c, q, one));
+    for (const side of twoFaced ? [1, -1] : [1]) {
+      off.set(0, 0, side * (d / 2 + 0.004)).applyQuaternion(q).add(c);
+      const qf = side === 1 ? q : q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(up, Math.PI));
+      faces.setMatrixAt(f++, m.compose(off, qf, one));
+    }
+    machines.push({ ...s, w, h, d });
+  });
+  scene.add(body, faces);
+}
+
+// mining rigs: two rows flanking the centre aisle, stacked two high, open frames (face front and back)
+const RIG = { w: 2.1, h: 1.4, d: 0.9 };
+const rigs = [];
+for (const side of [-1, 1]) for (const z of [-6.3, -4.0, -1.7, 1.7, 4.0, 6.3]) for (const lvl of [0, 1]) {
+  rigs.push({ x: side * 3.4, y: lvl * (RIG.h + 0.04), z, ry: side < 0 ? Math.PI / 2 : -Math.PI / 2 });
+}
+addKind(rigs, RIG.w, RIG.h, RIG.d, 'art/room/rig.webp', 0.16, true);
+
+// 2. spinning fans: a bladed ring over each of the six painted fans on both faces of every rig
+{
+  const bladeShape = new THREE.CircleGeometry(0.11, 3); // triangle: a bright blade blur once spinning
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0xbfbfc4, side: THREE.DoubleSide, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false });
+  const hubMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.6 });
+  const fanCols = [-0.72, -0.43, -0.14, 0.14, 0.43, 0.72]; // across the rig width (±1.05)
+  const total = rigs.length * 2 * 6;
+  const fans = new THREE.InstancedMesh(bladeShape, ringMat, total);
+  const hubs = new THREE.InstancedMesh(new THREE.CircleGeometry(0.04, 10), hubMat, total);
+  const up = new THREE.Vector3(0, 1, 0), m = new THREE.Matrix4(), q = new THREE.Quaternion(), qf = new THREE.Quaternion(), pos = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
+  const spin = [];
+  let n = 0;
+  for (const s of rigs) {
+    q.setFromAxisAngle(up, s.ry);
+    const c = new THREE.Vector3(s.x, s.y + RIG.h / 2 + 0.2, s.z);
+    for (const side of [1, -1]) {
+      qf.copy(side === 1 ? q : q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(up, Math.PI)));
+      for (const fx of fanCols) {
+        pos.set(fx * (side), 0, side * (RIG.d / 2 + 0.02)).applyQuaternion(q).add(c);
+        m.compose(pos, qf, one);
+        fans.setMatrixAt(n, m); hubs.setMatrixAt(n, m);
+        spin.push({ base: m.clone(), axis: new THREE.Vector3(0, 0, side).applyQuaternion(q), sp: 7 + Math.random() * 5, ph: Math.random() * 6.28, pos: pos.clone(), qf: qf.clone() });
+        n++;
+      }
+    }
+  }
+  fans.count = hubs.count = n;
+  scene.add(fans, hubs);
+  const rot = new THREE.Quaternion(), spinAxisLocal = new THREE.Vector3(0, 0, 1);
+  extras.push((dt, now) => {
+    for (let i = 0; i < n; i++) {
+      const f = spin[i];
+      rot.setFromAxisAngle(spinAxisLocal, now * f.sp + f.ph);
+      m.compose(f.pos, f.qf.clone().multiply(rot), one);
+      fans.setMatrixAt(i, m);
+    }
+    fans.instanceMatrix.needsUpdate = true;
+  });
+}
+
+// tall server racks lining all four walls, facing in
+const RACK = { w: 1.9, h: 2.85, d: 1.1 };
+const racks = [];
+for (let z = -7.7; z <= 7.8; z += 2.2) {
+  racks.push({ x: -RX + RACK.d / 2 + 0.1, y: 0, z, ry: Math.PI / 2 });
+  racks.push({ x: RX - RACK.d / 2 - 0.1, y: 0, z, ry: -Math.PI / 2 });
+}
+for (let x = -9.9; x <= 10; x += 2.2) {
+  if (Math.abs(x) < 1.2) continue; // leave a doorway gap on each end wall
+  racks.push({ x, y: 0, z: -RZ + RACK.d / 2 + 0.1, ry: 0 });
+  racks.push({ x, y: 0, z: RZ - RACK.d / 2 - 0.1, ry: Math.PI });
+}
+addKind(racks, RACK.w, RACK.h, RACK.d, 'art/room/rack.webp', 0.3, false);
+
+// ---- loose GPU cards drifting over the aisle
+const gpuMat = new THREE.MeshStandardMaterial({
+  map: tex('art/gpu.webp'), transparent: true, alphaTest: 0.1, side: THREE.DoubleSide, roughness: 0.4, metalness: 0.6
+});
+const gpuGeo = new THREE.PlaneGeometry(1.5, 1.5 * 763 / 1400);
+const cards = [];
+for (const [x, y, z, s] of []) { // floating cards removed at the owner's request
+  const c = new THREE.Mesh(gpuGeo, gpuMat);
+  c.position.set(x, y, z);
+  c.scale.setScalar(s);
+  c.userData = { y, ph: Math.random() * 6.28, sp: 0.18 + Math.random() * 0.12 };
+  scene.add(c);
+  cards.push(c);
+}
+
+// ---- flies: one GLB, instanced, steering from machine to machine
+const waypoints = machines.map(s => {
+  const n = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry);
+  return { c: new THREE.Vector3(s.x, s.y + s.h / 2, s.z), n, w: s.w, h: s.h, d: s.d };
+});
+function pointNear(wp) {
+  const out = 0.35 + Math.random() * 1.1;
+  const t = new THREE.Vector3(-wp.n.z, 0, wp.n.x).multiplyScalar((Math.random() - 0.5) * wp.w * 0.9);
+  return wp.c.clone().addScaledVector(wp.n, wp.d / 2 + out).add(t).setY(wp.c.y + (Math.random() - 0.5) * wp.h * 0.9);
+}
+const FLY_N = PHONE ? 48 : 80;
+const FWD = new THREE.Vector3(-1, 0, 0); // the model faces -X (checked side-on)
+const flyState = [];
+for (let i = 0; i < FLY_N; i++) {
+  const wp = waypoints[(Math.random() * waypoints.length) | 0];
+  const p = pointNear(wp);
+  flyState.push({
+    p, v: new THREE.Vector3((Math.random() - 0.5), 0, (Math.random() - 0.5)),
+    t: pointNear(waypoints[(Math.random() * waypoints.length) | 0]),
+    hover: 0, speed: 1.8 + Math.random() * 1.6, seed: Math.random() * 100, s: 0.26 + Math.random() * 0.12
+  });
+}
+let flies = null;
+new GLTFLoader(manager).load('art/fly.glb', g => {
+  g.scene.updateMatrixWorld(true);
+  let mesh = null;
+  g.scene.traverse(o => { if (o.isMesh && !mesh) mesh = o; });
+  if (!mesh) return;
+  const geo = mesh.geometry.clone().applyMatrix4(mesh.matrixWorld);
+  geo.computeBoundingBox();
+  const sz = geo.boundingBox.getSize(new THREE.Vector3());
+  geo.center().scale(1 / sz.x, 1 / sz.x, 1 / sz.x); // 1 unit nose-to-tail
+  const mat = mesh.material.clone();
+  mat.roughness = 0.35; mat.metalness = 0.2;
+  flies = new THREE.InstancedMesh(geo, mat, FLY_N);
+  flies.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  flies.frustumCulled = false;
+  scene.add(flies);
+});
+
+const ROW_IN = 3.4 - RIG.d / 2 - 0.15, ROW_OUT = 3.4 + RIG.d / 2 + 0.15, ROW_Z = 6.3 + RIG.w / 2 + 0.15;
+const fo = new THREE.Object3D(), dir = new THREE.Vector3(), want = new THREE.Vector3(), qBank = new THREE.Quaternion();
+function stepFlies(dt, now) {
+  if (!flies) return;
+  for (let i = 0; i < FLY_N; i++) {
+    const f = flyState[i];
+    want.subVectors(f.t, f.p);
+    const dist = want.length();
+    if (f.hover > 0) {
+      // loiter: small loops around the target
+      f.hover -= dt;
+      want.set(Math.cos(now * 3 + f.seed), Math.sin(now * 5 + f.seed) * 0.4, Math.sin(now * 3 + f.seed)).multiplyScalar(0.9).add(want);
+      if (f.hover <= 0) f.t = pointNear(waypoints[(Math.random() * waypoints.length) | 0]);
+    } else if (dist < 0.4) {
+      f.hover = Math.random() < 0.55 ? 0.4 + Math.random() * 1.6 : 0;
+      if (!f.hover) f.t = pointNear(waypoints[(Math.random() * waypoints.length) | 0]);
+    }
+    want.normalize().multiplyScalar(f.hover > 0 ? f.speed * 0.45 : f.speed);
+    // twitchy fly wobble
+    want.x += Math.sin(now * 7.1 + f.seed) * 0.9;
+    want.y += Math.sin(now * 9.3 + f.seed * 2) * 0.6;
+    want.z += Math.cos(now * 6.7 + f.seed) * 0.9;
+    f.v.lerp(want, Math.min(1, dt * 3.2));
+    f.p.addScaledVector(f.v, dt);
+    // stay in front of the wall racks, and slide around (or over) the rig rows instead of through them
+    f.p.x = THREE.MathUtils.clamp(f.p.x, -RX + 1.4, RX - 1.4);
+    f.p.y = THREE.MathUtils.clamp(f.p.y, 0.25, RH - 0.3);
+    f.p.z = THREE.MathUtils.clamp(f.p.z, -RZ + 1.4, RZ - 1.4);
+    const ax = Math.abs(f.p.x), top = RIG.h * 2 + 0.15;
+    if (ax > ROW_IN && ax < ROW_OUT && Math.abs(f.p.z) < ROW_Z && f.p.y < top) {
+      const sx = Math.sign(f.p.x) || 1;
+      const dIn = ax - ROW_IN, dOut = ROW_OUT - ax, dTop = top - f.p.y, dEnd = ROW_Z - Math.abs(f.p.z);
+      const m = Math.min(dIn, dOut, dTop, dEnd);
+      if (m === dIn) { f.p.x = sx * ROW_IN; f.v.x = 0; }
+      else if (m === dOut) { f.p.x = sx * ROW_OUT; f.v.x = 0; }
+      else if (m === dTop) { f.p.y = top; f.v.y = Math.abs(f.v.y); }
+      else { f.p.z = Math.sign(f.p.z) * ROW_Z; f.v.z = 0; }
+    }
+    dir.copy(f.v);
+    if (dir.lengthSq() > 1e-4) {
+      dir.normalize();
+      fo.quaternion.setFromUnitVectors(FWD, dir);
+      qBank.setFromAxisAngle(FWD, Math.sin(now * 11 + f.seed) * 0.25);
+      fo.quaternion.multiply(qBank);
+    }
+    fo.position.copy(f.p);
+    fo.scale.setScalar(f.s);
+    fo.updateMatrix();
+    flies.setMatrixAt(i, fo.matrix);
+  }
+  flies.instanceMatrix.needsUpdate = true;
+}
+
+// ---- post: bloom, then strict black-and-white with a soft vignette
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.6, 0.45, 0.8);
+composer.addPass(bloom);
+composer.addPass(new ShaderPass({
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+      vec2 d = vUv - 0.5;
+      l *= smoothstep(0.95, 0.25, length(d * vec2(1.0, 0.85)));
+      gl_FragColor = vec4(vec3(l), c.a);
+    }`
+}));
+composer.addPass(new OutputPass());
+
+function fit() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  bloom.resolution.set(w * (PHONE ? 0.35 : 0.5), h * (PHONE ? 0.35 : 0.5));
+  camera.aspect = w / h;
+  camera.fov = w < h ? 62 : 48;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', fit);
+fit();
+
+// 1. cables: sagging black runs from rig tops up to the ceiling and across to the wall racks
+{
+  const cableMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3e, roughness: 0.28, metalness: 0.55 });
+  const cables = [];
+  const sag = (a, b, drop) => {
+    const m = a.clone().lerp(b, 0.5); m.y -= drop;
+    return new THREE.CatmullRomCurve3([a, a.clone().lerp(m, 0.5).setY((a.y + m.y) / 2 - drop * 0.2), m, m.clone().lerp(b, 0.5).setY((m.y + b.y) / 2 - drop * 0.2), b]);
+  };
+  const add = (curve, r) => {
+    const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, r, 6, false), cableMat);
+    mesh.userData.ph = Math.random() * 6.28;
+    scene.add(mesh); cables.push(mesh);
+  };
+  const topY = 2 * (RIG.h + 0.04);
+  for (const side of [-1, 1]) for (const z of [-6.3, -1.7, 4.0]) for (let k = 0; k < 3; k++) {
+    const a = new THREE.Vector3(side * 3.4 + (k - 1) * 0.12, topY, z + (k - 1) * 0.25);
+    const b = new THREE.Vector3(side * (RX - 0.3), RH - 0.3 - k * 0.15, z + (k - 1) * 0.3 + 0.6);
+    add(sag(a, b, 0.9 + k * 0.25), 0.055 + k * 0.015);
+  }
+  for (const x of [-5.6, 5.6]) for (let k = 0; k < 4; k++) {
+    add(sag(new THREE.Vector3(x + k * 0.1, RH - 0.15, -RZ + 0.3), new THREE.Vector3(x + k * 0.16, RH - 0.15, RZ - 0.3), 0.7 + k * 0.18), 0.065);
+  }
+  extras.push((dt, now) => {
+    for (const c of cables) c.rotation.z = Math.sin(now * 0.6 + c.userData.ph) * 0.004;
+  });
+}
+
+// ---- loop
+const clock = new THREE.Clock();
+const box = new THREE.Box3(new THREE.Vector3(-RX + 1.4, 0.35, -RZ + 1.4), new THREE.Vector3(RX - 1.4, RH - 0.4, RZ - 1.4));
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(0.05, clock.getDelta());
+  const now = clock.elapsedTime;
+  if (!controls.autoRotate && idleAt && performance.now() - idleAt > 7000) controls.autoRotate = true;
+  controls.update();
+  box.clampPoint(camera.position, camera.position); // keep the camera inside the room
+  // crane over the rig rows instead of flying through them (soft, so the lift never pops)
+  const gx = Math.max(0, Math.abs(Math.abs(camera.position.x) - 3.4) - 0.55), gz = Math.max(0, Math.abs(camera.position.z) - 7.45);
+  const lift = 3.25 * (1 - THREE.MathUtils.smoothstep(Math.hypot(gx, gz), 0, 1.1));
+  if (camera.position.y < lift) camera.position.y = lift;
+  for (const c of cards) {
+    const u = c.userData;
+    c.position.y = u.y + Math.sin(now * 0.7 + u.ph) * 0.12;
+    c.rotation.y = now * u.sp + u.ph;
+    c.rotation.z = Math.sin(now * 0.5 + u.ph) * 0.08;
+  }
+  if (!hook.pause) stepFlies(dt, now);
+  for (const f of extras) f(dt, now);
+  composer.render();
+});
+
+const reveal = () => cv.classList.add('on');
+manager.onLoad = reveal;
+setTimeout(reveal, 4000);
+const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, get flies() { return flies; }, machines: machines.length };
+
+// ---- fly colony log (a SIMULATION panel): ranks are the real flies, chatter names the machine a fly is really near
+{
+  const FOREMEN = PHONE ? 4 : 6;
+  const NAMES = ['Vex', 'Mott', 'Sallow', 'Brack', 'Tull', 'Grist'];
+  const rankOf = i => (i === 0 ? 'queen' : i <= FOREMEN ? 'foreman' : 'worker');
+  flyState.forEach((f, i) => { f.rank = rankOf(i); if (i === 0) f.s *= 1.7; else if (i <= FOREMEN) f.s *= 1.25; });
+  const members = r => flyState.filter(f => f.rank === r);
+
+  const hive = document.querySelector('.hive');
+  hive.querySelector('.ranks').innerHTML =
+    `<span>Queen</span><span>1</span><span>Foremen</span><span>${FOREMEN}</span><span>Workers</span><span>${FLY_N - 1 - FOREMEN}</span>`;
+  hive.querySelector('header').addEventListener('click', () => hive.classList.toggle('min'));
+  const log = hive.querySelector('.log');
+
+  // hall stats (part of the SIMULATION panel): slow drifting values; uptime and flies airborne are real
+  const statsEl = hive.querySelector('.stats');
+  const t0 = performance.now();
+  const drift = (base, amp, sp, ph) => base + amp * Math.sin(performance.now() / 1000 * sp + ph) + amp * 0.35 * Math.sin(performance.now() / 1000 * sp * 2.7 + ph * 1.3);
+  const cell = (k, v, pct) => `<div><i>${k}</i><b>${v}</b><span class="bar"><u style="width:${Math.max(2, Math.min(100, pct)).toFixed(0)}%"></u></span></div>`;
+  const hms = s => [Math.floor(s / 3600), Math.floor(s / 60) % 60, Math.floor(s) % 60].map(n => String(n).padStart(2, '0')).join(':');
+  function stats() {
+    const temp = drift(31.8, 1.4, 0.05, 0.4), rpm = drift(2850, 260, 0.08, 1.1), kw = drift(48.6, 3.2, 0.04, 2.0), hum = drift(38, 4, 0.03, 0.7);
+    const air = flyState.filter(f => f.p.y > 0.6).length;
+    statsEl.innerHTML =
+      cell('HALL TEMP', temp.toFixed(1) + ' °C', (temp - 20) / 20 * 100) +
+      cell('FAN SPEED', Math.round(rpm).toLocaleString() + ' rpm', rpm / 4000 * 100) +
+      cell('POWER DRAW', kw.toFixed(1) + ' kW', kw / 70 * 100) +
+      cell('HUMIDITY', Math.round(hum) + ' %', hum) +
+      cell('FLIES AIRBORNE', air + ' / ' + FLY_N, air / FLY_N * 100) +
+      cell('UPTIME', hms((performance.now() - t0) / 1000), ((performance.now() - t0) / 1000 % 60) / 60 * 100);
+  }
+  stats();
+  setInterval(stats, 1000);
+
+  // where a fly is: the nearest machine, described the way a fly would
+  function where(f) {
+    let best = null, bd = Infinity;
+    for (const s of machines) {
+      const d = (s.x - f.p.x) ** 2 + (s.z - f.p.z) ** 2 + (s.y + s.h / 2 - f.p.y) ** 2;
+      if (d < bd) { bd = d; best = s; }
+    }
+    if (best.h < 2) return `the ${best.y > 0 ? 'top' : 'bottom'} rig, ${best.x < 0 ? 'west' : 'east'} row`;
+    const wall = best.x < -RX + 2 ? 'west' : best.x > RX - 2 ? 'east' : best.z < 0 ? 'north' : 'south';
+    return `a rack on the ${wall} wall`;
+  }
+
+  const LINES = {
+    queen: [
+      'All of you. Closer to the heat.',
+      'Bring me warmth from {w}.',
+      'I can hear every fan in this room.',
+      'Nobody rests on the light bars.',
+      'The racks are ours. The rigs are ours. Keep circling.',
+      'Something hums wrong near {w}. Find it.',
+      'Do not look at the floor. It looks back.',
+      'Slower, children. The machines like a slow orbit.'
+    ],
+    foreman: [
+      '{w}: fans turning, all clear.',
+      'Crew on {w}, tighten up.',
+      'Who left the cables swinging?',
+      'Rotation change. Rigs to racks, racks to rigs.',
+      "Heat's rising off {w}. Good.",
+      'Stay off the mirror floor. You will see yourselves.',
+      'Two of you on {w}. The rest, follow the cables.',
+      'Queen wants warmth. Find the warm side.',
+      'Nobody touches the fan blades. Again.'
+    ],
+    worker: [
+      'landed on {w}. it is warm here.',
+      'fan nearly took my wing again',
+      'the light bars buzz louder than we do',
+      'why do we circle the same rig',
+      'smells like solder up here',
+      '{w} has dust. good dust.',
+      'saw my reflection in the floor. did not like it.',
+      'following a cable to the ceiling',
+      "queen's watching. look busy.",
+      'resting on {w}. do not tell the foreman.',
+      'the rack fronts glow if you get close',
+      'heat coming off {w}. staying a while.'
+    ]
+  };
+  const recent = { queen: [], foreman: [], worker: [] };
+  function pickLine(rank) {
+    const pool = LINES[rank], seen = recent[rank];
+    let k;
+    do k = (Math.random() * pool.length) | 0; while (seen.includes(k));
+    seen.push(k);
+    if (seen.length > Math.min(5, pool.length - 2)) seen.shift();
+    return pool[k];
+  }
+
+  function say() {
+    const r = Math.random();
+    const rank = r < 0.14 ? 'queen' : r < 0.44 ? 'foreman' : 'worker';
+    const crew = members(rank);
+    const resting = crew.filter(f => f.hover > 0);
+    const f = (resting.length ? resting : crew)[(Math.random() * (resting.length || crew.length)) | 0];
+    const i = flyState.indexOf(f);
+    const who = rank === 'queen' ? 'QUEEN' : rank === 'foreman' ? `FOREMAN ${NAMES[(i - 1) % NAMES.length].toUpperCase()}` : 'WORKER';
+    const ln = document.createElement('div');
+    ln.className = `ln ${rank}`;
+    const tag = document.createElement('span');
+    tag.className = 'who';
+    tag.textContent = who;
+    let text = pickLine(rank).replace('{w}', where(f));
+    if (rank !== 'worker') text = text[0].toUpperCase() + text.slice(1); // workers mumble in lower case
+    ln.append(tag, text);
+    log.append(ln);
+    while (log.children.length > 30) log.firstChild.remove();
+  }
+  const tick = () => { say(); setTimeout(tick, 2500 + Math.random() * 1500); };
+  say(); setTimeout(say, 600); setTimeout(tick, 1400);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# ship only the site + its art + docs
+/*
+!/.gitignore
+!/README.md
+!/index.html
+!/room.html
+!/whitepaper.html
+!/worker.js
+!/docs/
+!/art/
+/art/*
+!/art/fly.glb
+!/art/gpu.webp
+!/art/room-preview.webp
+!/art/room/

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Whitepaper</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0d;--panel:#161618;--line:#2a2a2e;--txt:#d6d6d9;--sec:#9a9aa1;--mut:#67676e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Mono",monospace;font-size:15px;line-height:1.7}
+.wrap{max-width:760px;margin:0 auto;padding:48px 20px 96px}
+.top{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-bottom:48px}
+.top a{color:var(--sec);text-decoration:none}
+h1{font-size:38px;line-height:1.1;margin-bottom:12px}
+.lede{color:var(--sec);margin-bottom:36px}
+h2{font-size:20px;margin:44px 0 12px;padding-top:20px;border-top:1px solid var(--line)}
+h2 span{color:var(--mut);margin-right:10px}
+p{margin-bottom:14px}
+p b{color:#fff}
+.note{border:1px solid var(--line);background:var(--panel);padding:14px 16px;font-size:13px;color:var(--sec);margin:18px 0}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0 18px}
+td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><a href="index.html">← back to the meter</a><span>whitepaper · v0.1 · 2026-10</span></div>
+<h1>The Honest Q-Day Meter</h1>
+<p class="lede">A public, verifiable measurement of how hard the maths behind Bitcoin and Ethereum signatures really is, run live in your browser.</p>
+
+<h2><span>01</span>The question</h2>
+<p>In October 2026 a well-known Ethereum researcher argued that AI-driven mathematics might weaken elliptic-curve signatures before quantum computers do, and urged holders to move funds to addresses that have never signed. Experts disagreed loudly. Nobody could settle it by arguing.</p>
+<p>This project does not predict anything. It <b>measures</b>: how big a key the best known attack can recover, how fast, and how far that is from the 256-bit keys that protect real wallets.</p>
+
+<h2><span>02</span>How a run works</h2>
+<p>Each run makes a fresh random key of a chosen size, shows its public half first, then searches for the private half using Pollard's kangaroo method: two groups of walkers hop along the number line, one from known positions, one from the public key, until they land on the same spot. The distance between their starts is the answer.</p>
+<p>When the answer is found, the page multiplies it back and checks it matches the public key. Anyone can repeat that check. Every key is made by the page seconds before; no real wallet is ever touched.</p>
+
+<h2><span>03</span>What is measured and what is projected</h2>
+<table>
+<tr><th>Item</th><th>Status</th><th>Source</th></tr>
+<tr><td>Keys of 16 to 48 bits found in your browser</td><td>Measured live, with proof</td><td>This page</td></tr>
+<tr><td>Same sizes on one RTX 4090</td><td>Projected</td><td>Published speed of the open-source RCKangaroo tool</td></tr>
+<tr><td>135-bit record</td><td>Quoted</td><td>Bitcoin puzzle #135, solved July 2026</td></tr>
+<tr><td>256-bit Bitcoin keys</td><td>Projected (far out of reach)</td><td>Square-root cost of the method</td></tr>
+</table>
+<div class="note">Every extra 2 bits doubles the work. The gap from today's browser runs to a real Bitcoin key is roughly 2<sup>100</sup> times. The meter exists to make that gap visible.</div>
+
+<h2><span>04</span>The flies</h2>
+<p>The 3D sandbox shows the walkers as two swarms of flies: pale flies start from known positions, dark flies start from the public key. Their positions on screen come straight from the running search. When two flies meet, a light pillar marks the collision.</p>
+<p>The Room is the flies' home: a hall of rigs and racks. Its hive panel tells a <b>story</b> of the colony, a Queen, Foremen and Workers, and is labelled as simulation. When a real search is running on the meter, its real numbers appear in the same log, marked as real.</p>
+
+<h2><span>05</span>What this does not do</h2>
+<p>It does not show that AI will or will not find a new shortcut. It measures the attack we have today. It never targets anyone's wallet, and it does not hunt the Bitcoin puzzle prizes; those appear only as a public scoreboard.</p>
+
+<h2><span>06</span>Roadmap</h2>
+<table>
+<tr><th>Stage</th><th>What</th></tr>
+<tr><td>Now</td><td>Live browser runs, the ladder, the 3D sandbox, the Room</td></tr>
+<tr><td>Next</td><td>Daily larger runs on rented cloud GPUs, each published with its proof</td></tr>
+<tr><td>Later</td><td>Multi-GPU expeditions past 100 bits, funded openly, every hour on the books</td></tr>
+</table>
+</div>
+</body>
+</html>
