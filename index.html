@@ -95,6 +95,9 @@ footer .fl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--s
 .roomcard{position:relative;display:block;border:1px solid var(--line);overflow:hidden;border-radius:2px}
 .roomcard img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;transition:transform .8s ease}
 .roomcard:hover img{transform:scale(1.03)}
+.oss{display:inline-flex;align-items:center;gap:10px;margin-top:16px;font-size:12.5px;color:var(--sec);border:1px solid var(--line);padding:7px 11px;border-radius:2px;transition:border-color .15s,color .15s;max-width:100%;flex-wrap:wrap;overflow-wrap:anywhere;word-break:break-word}
+.oss span{color:var(--btnt);background:var(--txt);font-weight:700;font-size:10.5px;letter-spacing:.6px;padding:2px 6px}
+.oss:hover{border-color:var(--sec);color:var(--txt)}
 .roomlive{display:grid;grid-template-columns:1fr;gap:12px}
 .roomview{position:relative;border:1px solid var(--line);overflow:hidden;border-radius:2px;background:#000;aspect-ratio:16/10}
 .roomview iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
@@ -109,7 +112,7 @@ footer .fl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--s
 .rp-feed .ln b{color:var(--txt);font-weight:600;margin-right:6px}
 .rp-feed .ln.queen{color:var(--txt)}
 .rp-feed .ln time{color:var(--mut);margin-right:6px}
-@media(min-width:900px){.roomlive{grid-template-columns:1.75fr 1fr}.roomview{aspect-ratio:auto;min-height:440px}.rp-feed{max-height:none;flex:1}}
+@media(min-width:900px){.roomlive{grid-template-columns:1.75fr 1fr;height:520px}.roomview{aspect-ratio:auto;height:100%}.reports{height:100%}.rp-feed{max-height:none;flex:1;min-height:0}}
 .roomcta{position:absolute;left:16px;bottom:16px;background:var(--btn);color:var(--btnt);font-weight:600;padding:11px 16px;border-radius:2px}
 .stage{position:relative;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#0e0e10;overflow:hidden;width:100vw;margin-left:calc(50% - 50vw)}
 .stage canvas{display:block;width:100%;height:min(72vh,720px)}
@@ -139,7 +142,7 @@ footer .fl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--s
 <div class="wrap">
 <nav>
   <a class="brand" href="#top"><img class="mark" src="art/logo/mark-white.webp" alt="" width="30" height="30">quantum break</a>
-  <div class="links"><a href="#top" class="on">Meter</a><a href="#runs">Runs</a><a href="#ladder">Ladder</a><a href="#board">Board</a><a href="#method">Method</a><a href="room.html">Quantum Room</a></div>
+  <div class="links"><a href="#top" class="on">Meter</a><a href="#runs">Runs</a><a href="#ladder">Ladder</a><a href="#board">Board</a><a href="#method">Method</a><a href="room.html">Quantum Room</a><a href="https://github.com/Osmantechnologies/quantum-break" target="_blank" rel="noopener">GitHub ↗</a></div>
   <div class="right"><span class="live" id="navlive">Idle</span><button class="pri" id="navgo">Start the climb</button></div>
 </nav>
 </div>
@@ -151,6 +154,7 @@ footer .fl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--s
     <h1>Every run breaks a bigger key.</h1>
     <p class="sub" id="sub">Press start. Your browser will crack a real key, then a bigger one, then a bigger one, and publish the proof each time. <b>Bitcoin keys are 256 bits.</b> Watch how fast the wall goes up.</p>
     <div class="cta"><button class="pri" id="go">Start the climb</button><button id="one">Break one key</button><a href="room.html"><button>Launch Quantum Room</button></a></div>
+    <a class="oss" href="https://github.com/Osmantechnologies/quantum-break" target="_blank" rel="noopener"><span>OPEN SOURCED</span>github.com/Osmantechnologies/quantum-break ↗</a>
     <div class="sel" id="bitsel" style="margin-top:14px;display:none"></div>
   </div>
   <div>
@@ -163,7 +167,7 @@ footer .fl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--s
   <h2>The Quantum Room</h2>
   <p class="lead">Where the flies live: a hall of rigs and racks you can walk through in 3D, with the colony's log running beside it.</p>
   <div class="roomlive">
-    <div class="roomview"><iframe src="room.html?embed=1" title="The Quantum Room, live" loading="lazy" allow="fullscreen"></iframe><a class="roomcta" href="room.html">Open full room →</a></div>
+    <div class="roomview"><iframe src="room.html?embed=1&v=2" title="The Quantum Room, live" loading="lazy" allow="fullscreen"></iframe><a class="roomcta" href="room.html">Open full room →</a></div>
     <aside class="reports" aria-label="Colony reports">
       <header><b>COLONY REPORTS</b><span id="rp-count">0 reports</span></header>
       <div class="rp-stats" id="rp-stats"></div>
@@ -224,7 +228,7 @@ footer .fl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--s
 </section>
 
 <footer>
-  <div class="fl"><a href="#top">Meter</a><a href="#runs">Runs</a><a href="#ladder">Ladder</a><a href="#board">Board</a><a href="#method">Method</a></div>
+  <div class="fl"><a href="#top">Meter</a><a href="#runs">Runs</a><a href="#ladder">Ladder</a><a href="#board">Board</a><a href="#method">Method</a><a href="https://github.com/Osmantechnologies/quantum-break" target="_blank" rel="noopener">Open sourced on GitHub ↗</a></div>
   Quantum Break · the honest Q-Day meter · every number on this page is measured in your browser or quoted with its source · build v0.2.0
 </footer>
 </main>
@@ -386,7 +390,7 @@ const Hunt={commit(){},progress(){},done(){},set3d(){},get(){return {}}};
  addEventListener('message',e=>{const m=e.data;if(e.origin!==location.origin||!m||m.src!=='quantum-room')return;
   if(m.type==='stats'){st.innerHTML=cell('HALL TEMP',m.temp.toFixed(1)+' °C')+cell('FAN SPEED',Math.round(m.rpm).toLocaleString()+' rpm')+cell('POWER',m.kw.toFixed(1)+' kW')+cell('HUMIDITY',Math.round(m.hum)+' %')+cell('AIRBORNE',m.air+' / '+m.total)+cell('UPTIME',hms(m.up));}
   if(m.type==='line'){if(!n)feed.innerHTML='';n++;cnt.textContent=n+(n===1?' report':' reports');
-   const d=document.createElement('div');d.className='ln '+m.rank;const t=document.createElement('time');t.textContent=new Date().toTimeString().slice(0,8);
+   const d=document.createElement('div');d.className='ln '+m.rank;const t=document.createElement('time');t.textContent=new Date(m.at||Date.now()).toTimeString().slice(0,8);
    const w=document.createElement('b');w.textContent=m.who;d.append(t,w,m.text);feed.prepend(d);while(feed.children.length>120)feed.lastChild.remove();}
  });})();
 </script>

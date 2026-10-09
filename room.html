@@ -607,7 +607,7 @@ const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, 
     return pool[k];
   }
 
-  function say() {
+  function say(at) {
     const r = Math.random();
     const rank = r < 0.14 ? 'queen' : r < 0.44 ? 'foreman' : 'worker';
     const crew = members(rank);
@@ -624,11 +624,18 @@ const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, 
     if (rank !== 'worker') text = text[0].toUpperCase() + text.slice(1); // workers mumble in lower case
     ln.append(tag, text);
     log.append(ln);
-    relay({ type: 'line', rank, who, text });
+    relay({ type: 'line', rank, who, text, at: at || Date.now() });
     while (log.children.length > 30) log.firstChild.remove();
   }
-  const tick = () => { say(); setTimeout(tick, 2500 + Math.random() * 1500); };
-  say(); setTimeout(say, 600); setTimeout(tick, 1400);
+  // backlog: the last few hours of colony reports, spaced like a real shift log, then live reports every 8-20 s
+  {
+    const N = 48, now = Date.now(), stamps = [];
+    let t = now - 20000;
+    for (let i = 0; i < N; i++) { stamps.push(t); t -= (40 + Math.random() * 260) * 1000; }
+    stamps.reverse().forEach(ts => say(ts));
+  }
+  const tick = () => { say(); setTimeout(tick, 8000 + Math.random() * 12000); };
+  setTimeout(tick, 4000);
 }
 </script>
 </body>
