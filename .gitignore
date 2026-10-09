@@ -14,3 +14,8 @@
 !/art/gpu.webp
 !/art/room-preview.webp
 !/art/room/
+!/art/logo/
+/art/logo/*
+!/art/logo/mark-white.webp
+!/art/logo/favicon-32.png
+!/art/logo/apple-touch-icon.png

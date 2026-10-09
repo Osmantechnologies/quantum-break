@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Quantum Room</title>
+<link rel="icon" type="image/png" sizes="32x32" href="art/logo/favicon-32.png">
+<link rel="apple-touch-icon" href="art/logo/apple-touch-icon.png">
 <style>
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
   canvas#room { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
@@ -38,6 +40,7 @@
   @keyframes hive-in { from { opacity: 0; transform: translateY(4px); } }
   .back { position: fixed; left: 14px; top: 14px; z-index: 5; font: 600 12px "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .5px;
     color: #d6d6d9; text-decoration: none; background: #0a0a0bcc; border: 1px solid #2a2a2e; padding: 8px 12px; backdrop-filter: blur(6px); }
+  .back img { float: left; width: 34px; height: 34px; margin: 0 10px 0 -2px; }
   .back b { display: block; font-size: 15px; letter-spacing: 1.5px; color: #fff; }
   .back span { color: #67676e; font-weight: 400; }
   /* phone: a short bottom sheet so the room stays visible and draggable above it */
@@ -49,7 +52,7 @@
 </head>
 <body>
 <canvas id="room" aria-label="A black and white machine room with flies drifting between mining rigs and server racks"></canvas>
-<a class="back" href="index.html"><b>QUANTUM ROOM</b><span>← back to the meter</span></a>
+<a class="back" href="index.html"><img src="art/logo/mark-white.webp" alt="" width="34" height="34"><b>QUANTUM ROOM</b><span>← back to the meter</span></a>
 <aside class="hive" aria-label="Fly colony log">
   <header title="Tap to fold"><b>FLY COLONY</b></header>
   <div class="ranks"></div>

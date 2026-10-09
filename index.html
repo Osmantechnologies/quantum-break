@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>cracker · the honest Q-Day meter</title>
+<link rel="icon" type="image/png" sizes="32x32" href="art/logo/favicon-32.png">
+<link rel="apple-touch-icon" href="art/logo/apple-touch-icon.png">
 <meta name="description" content="Every run breaks a bigger key, live in your browser, with proof. See how far that is from Bitcoin's 256 bits.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,6 +21,7 @@ button:disabled{opacity:.4;cursor:default}
 .wrap{max-width:1136px;margin:0 auto;padding:0 20px}
 nav{display:flex;align-items:center;gap:18px;height:62px;border-bottom:1px solid var(--line)}
 nav .brand{font-weight:700;font-size:20px;display:flex;align-items:center;gap:10px}
+nav .brand .mark{width:30px;height:30px;display:block}
 nav .brand i{display:inline-grid;grid-template-columns:repeat(4,4px);gap:2px}
 nav .brand i b{width:4px;height:4px;background:var(--txt);display:block}
 nav .links{display:flex;gap:4px;margin-left:8px}
@@ -120,7 +123,7 @@ footer .fl{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;color:var(--s
 <body>
 <div class="wrap">
 <nav>
-  <a class="brand" href="#top"><i><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i>cracker</a>
+  <a class="brand" href="#top"><img class="mark" src="art/logo/mark-white.webp" alt="" width="30" height="30">cracker</a>
   <div class="links"><a href="#top" class="on">Meter</a><a href="#runs">Runs</a><a href="#ladder">Ladder</a><a href="#board">Board</a><a href="#method">Method</a><a href="room.html">Quantum Room</a></div>
   <div class="right"><span class="live" id="navlive">Idle</span><button class="pri" id="navgo">Start the climb</button></div>
 </nav>

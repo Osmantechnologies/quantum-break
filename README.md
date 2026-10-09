@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/hero.webp" alt="The Quantum Room" width="100%">
+<img src="docs/logo.webp" alt="Quantum Break logo: a fly whose wings break into pixels" width="180">
 
 # QUANTUM BREAK
 
@@ -10,6 +10,8 @@
 `secp256k1` · `Pollard's kangaroo` · `16 → 48 bits in a browser tab` · `256 bits to go`
 
 </div>
+
+<img src="docs/hero.webp" alt="The Quantum Room" width="100%">
 
 ---
 
