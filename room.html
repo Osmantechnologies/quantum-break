@@ -51,7 +51,7 @@
 <canvas id="room" aria-label="A black and white machine room with flies drifting between mining rigs and server racks"></canvas>
 <a class="back" href="index.html"><b>QUANTUM ROOM</b><span>← back to the meter</span></a>
 <aside class="hive" aria-label="Fly colony log">
-  <header title="Tap to fold"><b>FLY COLONY</b><span class="sim">SIMULATION</span></header>
+  <header title="Tap to fold"><b>FLY COLONY</b></header>
   <div class="ranks"></div>
   <div class="stats"></div>
   <div class="log" aria-live="polite"></div>
@@ -479,9 +479,11 @@ const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, 
   const drift = (base, amp, sp, ph) => base + amp * Math.sin(performance.now() / 1000 * sp + ph) + amp * 0.35 * Math.sin(performance.now() / 1000 * sp * 2.7 + ph * 1.3);
   const cell = (k, v, pct) => `<div><i>${k}</i><b>${v}</b><span class="bar"><u style="width:${Math.max(2, Math.min(100, pct)).toFixed(0)}%"></u></span></div>`;
   const hms = s => [Math.floor(s / 3600), Math.floor(s / 60) % 60, Math.floor(s) % 60].map(n => String(n).padStart(2, '0')).join(':');
+  const hall = { temp: 31.8, rpm: 2850, kw: 48.6, hum: 38, air: 0 }; // shared with the chatter so log and panel agree
   function stats() {
     const temp = drift(31.8, 1.4, 0.05, 0.4), rpm = drift(2850, 260, 0.08, 1.1), kw = drift(48.6, 3.2, 0.04, 2.0), hum = drift(38, 4, 0.03, 0.7);
     const air = flyState.filter(f => f.p.y > 0.6).length;
+    Object.assign(hall, { temp, rpm, kw, hum, air });
     statsEl.innerHTML =
       cell('HALL TEMP', temp.toFixed(1) + ' °C', (temp - 20) / 20 * 100) +
       cell('FAN SPEED', Math.round(rpm).toLocaleString() + ' rpm', rpm / 4000 * 100) +
@@ -505,8 +507,32 @@ const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, 
     return `a rack on the ${wall} wall`;
   }
 
+  // fill a line's number slots from the live scene (rig, crowd, distance, height) and the hall panel
+  function fill(text, f) {
+    let best = null, bd = Infinity;
+    for (const s of machines) {
+      const d = (s.x - f.p.x) ** 2 + (s.z - f.p.z) ** 2 + (s.y + s.h / 2 - f.p.y) ** 2;
+      if (d < bd) { bd = d; best = s; }
+    }
+    const crowd = flyState.filter(o => (best.x - o.p.x) ** 2 + (best.z - o.p.z) ** 2 < 2.4).length;
+    const up = (performance.now() - t0) / 1000;
+    const v = {
+      w: where(f), rig: String(machines.indexOf(best) + 1).padStart(2, '0'), n: crowd, n2: crowd + 2 + ((Math.random() * 4) | 0),
+      d: Math.sqrt(bd).toFixed(2), h: f.p.y.toFixed(2), wk: String(flyState.indexOf(f)).padStart(2, '0'),
+      air: hall.air, total: FLY_N, ground: FLY_N - hall.air, up: hms(up), mins: Math.max(1, Math.round(up / 60)),
+      temp: hall.temp.toFixed(1), rpm: Math.round(hall.rpm).toLocaleString(), kw: hall.kw.toFixed(1), hum: Math.round(hall.hum)
+    };
+    return text.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
+  }
+
   const LINES = {
     queen: [
+      'Hall at {temp}°C. Not warm enough. Closer.',
+      '{air} of {total} in the air. Good. The other {ground}, up.',
+      'Rig {rig} is pulling {kw} kW. Feed on it.',
+      '{n} of you on rig {rig}. I want {n2}.',
+      'Uptime {up}. Nobody has slept.',
+      'Humidity {hum}%. My wings are heavy. Yours will be lighter.',
       'All of you. Closer to the heat.',
       'Bring me warmth from {w}.',
       'I can hear every fan in this room.',
@@ -517,6 +543,13 @@ const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, 
       'Slower, children. The machines like a slow orbit.'
     ],
     foreman: [
+      'Rig {rig}: fans at {rpm} rpm, all clear.',
+      'Crew of {n} on rig {rig}. Tighten up.',
+      'Worker #{wk}, you are {d} m off the rack. Closer.',
+      'Count off: {air} airborne, {ground} grounded.',
+      'Rig {rig} front reads {temp}°C. That is our side.',
+      'Shift {mins} min in. Rotate the crew on rig {rig}.',
+      'Hall draw {kw} kW. The warm rows are east and west.',
       '{w}: fans turning, all clear.',
       'Crew on {w}, tighten up.',
       'Who left the cables swinging?',
@@ -528,6 +561,13 @@ const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, 
       'Nobody touches the fan blades. Again.'
     ],
     worker: [
+      'landed on rig {rig}. {temp}°C here. warm.',
+      '{d} m from the fan. too close. backing off.',
+      'hovering at {h} m. the light bars are right there',
+      'fan doing {rpm} rpm. it nearly took my wing',
+      'worker #{wk} checking in. {n} of us on rig {rig}',
+      '{air} of us flying, {ground} sitting. lazy.',
+      '{mins} min on shift and the queen is still watching',
       'landed on {w}. it is warm here.',
       'fan nearly took my wing again',
       'the light bars buzz louder than we do',
@@ -559,13 +599,13 @@ const hook = window.__ROOM = { scene, camera, controls, flyState, pause: false, 
     const resting = crew.filter(f => f.hover > 0);
     const f = (resting.length ? resting : crew)[(Math.random() * (resting.length || crew.length)) | 0];
     const i = flyState.indexOf(f);
-    const who = rank === 'queen' ? 'QUEEN' : rank === 'foreman' ? `FOREMAN ${NAMES[(i - 1) % NAMES.length].toUpperCase()}` : 'WORKER';
+    const who = rank === 'queen' ? 'QUEEN' : rank === 'foreman' ? `FOREMAN ${NAMES[(i - 1) % NAMES.length].toUpperCase()}` : `WORKER #${String(i).padStart(2, '0')}`;
     const ln = document.createElement('div');
     ln.className = `ln ${rank}`;
     const tag = document.createElement('span');
     tag.className = 'who';
     tag.textContent = who;
-    let text = pickLine(rank).replace('{w}', where(f));
+    let text = fill(pickLine(rank), f);
     if (rank !== 'worker') text = text[0].toUpperCase() + text.slice(1); // workers mumble in lower case
     ln.append(tag, text);
     log.append(ln);
