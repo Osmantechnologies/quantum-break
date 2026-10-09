@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Research Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0d;--panel:#161618;--line:#2a2a2e;--txt:#d6d6d9;--sec:#9a9aa1;--mut:#67676e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Mono",monospace;font-size:15px;line-height:1.7}
+.wrap{max-width:760px;margin:0 auto;padding:48px 20px 96px}
+.top{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--mut);margin-bottom:48px}
+.top a{color:var(--sec);text-decoration:none}
+h1{font-size:38px;line-height:1.1;margin-bottom:12px}
+.lede{color:var(--sec);margin-bottom:36px}
+h2{font-size:20px;margin:44px 0 12px;padding-top:20px;border-top:1px solid var(--line)}
+h2 span{color:var(--mut);margin-right:10px}
+h3{font-size:15px;margin:26px 0 8px;color:#fff}
+p{margin-bottom:14px}
+p b{color:#fff}
+.note{border:1px solid var(--line);background:var(--panel);padding:14px 16px;font-size:13px;color:var(--sec);margin:18px 0}
+.note b{color:var(--txt)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0 18px}
+td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:500}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.scroll table{min-width:520px}
+.tag{display:inline-block;border:1px solid var(--mut);color:var(--sec);font-size:10px;letter-spacing:.5px;padding:0 6px;margin-right:6px;vertical-align:2px}
+.tag.spec{border-style:dashed}
+ul,ol{margin:0 0 14px 22px}
+li{margin-bottom:6px}
+.toc{font-size:13px;color:var(--sec);margin:0 0 8px 22px}
+.toc a{color:var(--sec)}
+.q{border-left:1px solid var(--mut);padding-left:14px;margin:18px 0;color:var(--sec)}
+.src{font-size:12px;color:var(--sec)}
+.src li{margin-bottom:8px}
+a{color:var(--txt)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><a href="whitepaper.html">← back to the whitepaper</a><span>research notes · v0.1 · 2026-10</span></div>
+<h1>Research Notes</h1>
+<p class="lede">Long-form notes on what the meter measures and what sits around it: the colony as a picture of distributed search, the cost curve of GPU expeditions, the move to post-quantum signatures, and the questions nobody can answer yet.</p>
+
+<div class="note"><b>Speculative thought experiments.</b> These notes are conceptual. They are not predictions, not security advice and not financial advice. Where a number is measured or quoted, it is labelled and sourced. Everything marked <span class="tag spec">SPECULATIVE</span> is an idea to think with, not a claim.</div>
+
+<ol class="toc">
+<li><a href="#read">How to read these notes</a></li>
+<li><a href="#colony">The colony as distributed search</a></li>
+<li><a href="#scaling">Scaling: the square-root wall</a></li>
+<li><a href="#economics">The economics of GPU expeditions</a></li>
+<li><a href="#pq">Post-quantum migration and bunker mode</a></li>
+<li><a href="#open">Open questions</a></li>
+<li><a href="#sources">Sources</a></li>
+</ol>
+
+<h2 id="read"><span>00</span>How to read these notes</h2>
+<p>Every claim carries one of four labels:</p>
+<div class="scroll"><table>
+<tr><th>Label</th><th>Meaning</th></tr>
+<tr><td><span class="tag">MEASURED</span></td><td>Done on this site, in your browser, with a proof you can re-check</td></tr>
+<tr><td><span class="tag">QUOTED</span></td><td>Taken from a named public source, listed at the end</td></tr>
+<tr><td><span class="tag">ARITHMETIC</span></td><td>Worked out from measured or quoted numbers. The method is shown so you can redo it</td></tr>
+<tr><td><span class="tag spec">SPECULATIVE</span></td><td>A thought experiment. Useful for thinking, not evidence of anything</td></tr>
+</table></div>
+<p>The rule we hold ourselves to: a speculative idea is never allowed to lean on a number it does not have.</p>
+
+<h2 id="colony"><span>01</span>The colony as distributed search</h2>
+<p>The Room shows a colony of flies: a Queen, Foremen and Workers moving between machines. Its log is labelled simulation, and it is a story. Under the story sits a real algorithm, and the metaphor fits it surprisingly well, right up to the point where it breaks. That breaking point is the most useful part.</p>
+
+<h3>What the search really does</h3>
+<p><span class="tag">QUOTED</span>Pollard's kangaroo method looks for a private key known to lie in an interval. Two groups of walkers hop along the number line. Each hop length depends only on where the walker stands, so the walk is pseudo-random but repeatable. The tame group starts from known positions; the wild group starts from the public key, an unknown distance away. If a wild walker ever lands on a square a tame walker visited, both follow the same path from then on, and the difference of their starting distances is the private key. The van Oorschot and Wiener version runs many walkers in parallel and only records <b>distinguished points</b>: positions whose encoding happens to end in a run of zeros. Those records are all the walkers share.</p>
+
+<h3>Mapping the colony onto it</h3>
+<div class="scroll"><table>
+<tr><th>Colony</th><th>Search</th><th>Why the mapping holds</th></tr>
+<tr><td>Workers</td><td>Individual walkers</td><td>Cheap, numerous, short-sighted. No worker knows where the key is</td></tr>
+<tr><td>Scent marks</td><td>Distinguished points</td><td>Rare marks left at special spots. Most of the path is never written down</td></tr>
+<tr><td>The hive's memory</td><td>The shared table of distinguished points</td><td>The only shared state. A collision is found when two marks match</td></tr>
+<tr><td>Foremen</td><td>The jump table and the herd split</td><td>They set how far each hop goes and keep tame and wild crews balanced</td></tr>
+<tr><td>The Queen</td><td>The coordinator</td><td>Collects marks, spots the match, calls the hunt off. She does no searching herself</td></tr>
+</table></div>
+<p>This is <b>stigmergy</b>: coordination through marks left in a shared environment rather than through direct messages. Ants laying pheromone trails are the textbook case. A kangaroo search is stigmergic in exactly that sense. Walkers never talk to each other. They leave sparse marks, and the colony as a whole notices when two trails cross.</p>
+
+<h3>Where the metaphor breaks</h3>
+<p>Real swarms are good at search because their world has <b>gradients</b>. Food smells stronger as you get closer. Pheromone trails get stronger on shorter routes. An ant colony optimiser works because good answers are near other good answers.</p>
+<p><span class="tag">QUOTED</span>An elliptic-curve group gives no such signal. A point that is one step from the answer looks exactly like a point that is 2<sup>200</sup> steps away. Nothing gets warmer. The best a colony can do is cover ground efficiently and wait for two trails to cross, and the birthday paradox sets that waiting time: about the square root of the size of the space.</p>
+<p><span class="tag spec">SPECULATIVE</span>That is a clean way to frame the "AI might break elliptic curves" argument. The question is not whether a smarter colony can search faster. Better workers only change the constant in front of the square root. The real question is <b>whether a hidden gradient exists</b>: some structure in the curve that makes points near the answer distinguishable. If one were found, the flies could smell the key, and the square-root wall would turn into a slope. Nobody has shown such a structure for secp256k1. The meter cannot find one either. What it can do is show what the world looks like while none exists.</p>
+
+<h3>Thought experiment: a colony with memory</h3>
+<p><span class="tag spec">SPECULATIVE</span>Suppose the colony kept its scent marks between hunts. Distinguished points from one key are useless for another key, because the wild walkers start from a different public key. Tame trails are a different story: they depend only on the jump table and the interval, so a colony that reused them would start each new hunt with part of its map already drawn. This is the precomputation idea from the discrete-log literature (Bernstein and Lange worked it out for small discrete logs), and it is worth noticing. It turns many separate hunts into one long hunt with a growing memory. It does not change the wall for a single 256-bit key. It does mean the right unit for a long-running meter may be the colony's whole lifetime, not one run.</p>
+
+<h2 id="scaling"><span>02</span>Scaling: the square-root wall</h2>
+<p><span class="tag">ARITHMETIC</span>For a key known to lie in a range of 2<sup>b</sup> values, the expected work is about K · 2<sup>b/2</sup> hops. K is a small constant that depends on the method; RCKangaroo publishes K ≈ 1.15. Two more bits of key means twice the work. Ten more bits means 32 times the work.</p>
+<p>The table uses one rented RTX 4090 at the published RCKangaroo speed of about 14.5 billion hops per second. These are expected times. A single run can come in faster or slower, because the walk is random.</p>
+<div class="scroll"><table>
+<tr><th>Key size</th><th>Expected hops</th><th>One 4090</th><th>Label</th></tr>
+<tr><td>48 bits</td><td>2<sup>24.2</sup></td><td>about 1 ms</td><td><span class="tag">MEASURED</span> seconds in your browser tab</td></tr>
+<tr><td>80 bits</td><td>2<sup>40.2</sup></td><td>about 1.5 min</td><td><span class="tag">ARITHMETIC</span></td></tr>
+<tr><td>96 bits</td><td>2<sup>48.2</sup></td><td>about 6 h</td><td><span class="tag">ARITHMETIC</span></td></tr>
+<tr><td>100 bits</td><td>2<sup>50.2</sup></td><td>about 1 day</td><td><span class="tag">ARITHMETIC</span></td></tr>
+<tr><td>110 bits</td><td>2<sup>55.2</sup></td><td>about 33 days</td><td><span class="tag">ARITHMETIC</span></td></tr>
+<tr><td>120 bits</td><td>2<sup>60.2</sup></td><td>about 3 years</td><td><span class="tag">ARITHMETIC</span></td></tr>
+<tr><td>135 bits</td><td>2<sup>67.7</sup></td><td>about 525 years</td><td>Solved July 2026 by a ~200-GPU rig in ~5 months <span class="tag">QUOTED</span></td></tr>
+<tr><td>256 bits</td><td>2<sup>128.2</sup></td><td>about 10<sup>21</sup> years</td><td><span class="tag">ARITHMETIC</span></td></tr>
+</table></div>
+
+<h3>Parallel helps time, not work</h3>
+<p><span class="tag">QUOTED</span>Kangaroo search parallelises almost perfectly: m walkers on m machines finish about m times sooner, as long as they share distinguished points. That is why the 135-bit record was possible at all.</p>
+<p><span class="tag">ARITHMETIC</span>Working back from the record: puzzle #135's key lies in a range of 2<sup>134</sup>, so the expected work is about 2<sup>67.2</sup> hops. Done in about five months, that averages roughly 13 trillion hops per second. Two hundred cards at 4090 speed would give about 3 trillion. The gap points to faster cards, a better constant, a lucky run, or some mix of the three, and from outside we cannot tell which. Either way, pointed at a 256-bit key, a 13-trillion-hop rig would still need around 10<sup>18</sup> years. Parallelism moves the wall closer by a constant factor. It does not change its shape.</p>
+
+<h3>The hidden cost: memory</h3>
+<p><span class="tag spec">SPECULATIVE</span>The colony's shared memory grows with the hunt. Rarer scent marks (more zero bits required) save memory but mean each walker travels further before it reports, so a collision is noticed later. At very large sizes, storing and matching marks across thousands of machines is an engineering problem of its own. For a public meter this is a quiet but real limit: the bottleneck of a big expedition may turn out to be bookkeeping, not arithmetic.</p>
+
+<h3>What Bitcoin mining power cannot do</h3>
+<p><span class="tag">QUOTED</span>Bitcoin's mining network does an enormous number of SHA-256 hashes per second on chips built for exactly that and nothing else. Those chips cannot do elliptic-curve arithmetic. The world's largest hashing network is the wrong tool for this search: the hashrate number people quote says nothing about how hard keys are to break.</p>
+
+<h2 id="economics"><span>03</span>The economics of GPU expeditions</h2>
+<p>The plan beyond the browser is to rent cloud GPUs for bigger runs, each with its key's public half published before the run and the private half after. These notes work through what that costs. Nothing here has been spent yet.</p>
+
+<h3>Cost per bit</h3>
+<p><span class="tag">ARITHMETIC</span>At $0.50 per 4090-hour, from the middle of the quoted $0.35–0.70 range:</p>
+<div class="scroll"><table>
+<tr><th>Key size</th><th>GPU-hours</th><th>Expected cost</th></tr>
+<tr><td>88 bits</td><td>0.4</td><td>about $0.20</td></tr>
+<tr><td>96 bits</td><td>6.2</td><td>about $3</td></tr>
+<tr><td>100 bits</td><td>25</td><td>about $12</td></tr>
+<tr><td>104 bits</td><td>99</td><td>about $50</td></tr>
+<tr><td>110 bits</td><td>794</td><td>about $400</td></tr>
+<tr><td>120 bits</td><td>25,400</td><td>about $13,000</td></tr>
+<tr><td>135 bits</td><td>4.6 million</td><td>about $2.3 million</td></tr>
+</table></div>
+<p>Two things fall out of this. First, <b>the price of a bit doubles every two bits</b>. A budget that buys 100 bits buys 102 for twice the money, and nothing more. Second, <b>money buys time, not bits</b>. Ten GPUs finish a 110-bit run ten times faster for the same $400. Spreading the work across machines changes the calendar, not the bill.</p>
+
+<h3>Fees as fuel</h3>
+<p><span class="tag spec">SPECULATIVE</span>The roadmap imagines expeditions funded openly, with every GPU-hour shown on the books next to what paid for it. The arithmetic gives that a strange, honest shape. Under steady funding the meter climbs fast at first, then by about two bits for every doubling of spend. A ledger like that cannot be hyped: each new bit costs twice the last one, in public. The interesting part is that the slowdown is the point. A chart of bits against dollars is a chart of why 256-bit keys are safe from this method.</p>
+
+<h3>Luck, variance and spending caps</h3>
+<p><span class="tag">QUOTED</span>A kangaroo run's length is random around its expected value. Some runs finish early, some take much longer, and the long tail is real.</p>
+<p><span class="tag spec">SPECULATIVE</span>A paid expedition therefore needs a hard spending cap and a published rule for what happens when the cap hits before the key is found: stop and say so, or extend with a new budget. Publishing that rule before the run, alongside the public key, matters as much as publishing the key. A meter that quietly keeps going until it gets lucky is measuring its own patience, not the maths.</p>
+
+<h3>Thought experiment: the expedition that should not be run</h3>
+<p><span class="tag spec">SPECULATIVE</span>Bitcoin puzzle wallets are a public challenge: keys in known small ranges, funded since 2015. A meter with an expedition budget could, in principle, aim at one. We do not, for three reasons worth writing down. It would turn a measurement into a prize hunt, with an incentive to cut corners. The quoted history shows puzzle prizes stolen from the mempool by bots during the solver's own transaction, so a win can become a loss. And the meter's value is that its keys are its own: it never touches money that belongs to anyone else, including a puzzle's creator. The puzzles stay on the page as a scoreboard only.</p>
+
+<h2 id="pq"><span>04</span>Post-quantum migration and bunker mode</h2>
+<p>Everything above is about classical computers. The other reason people talk about "Q-Day" is Shor's algorithm. A large enough fault-tolerant quantum computer would solve the elliptic-curve discrete log in polynomial time, so the square-root wall would not apply to it at all.</p>
+
+<h3>How far away that is</h3>
+<p><span class="tag">QUOTED</span>A 2017 resource estimate by Roetteler, Naehrig, Svore and Lauter puts Shor on a 256-bit elliptic curve at roughly 2,330 <b>logical</b> qubits. Logical qubits are error-corrected and each is built from many physical qubits, so the hardware needed is far larger and depends on error rates. In April 2026 Project Eleven awarded a 1 BTC prize for breaking a 15-bit elliptic-curve key on quantum hardware.</p>
+<p><span class="tag spec">SPECULATIVE</span>Fifteen bits on quantum hardware sits well below the 48 bits a browser tab does in seconds. That is not a reason for comfort. Quantum progress may not be smooth, and a meter that only watches classical hardware would miss a jump. A fair meter could one day carry a second ladder for quantum records next to the GPU one, sourced the same way.</p>
+
+<h3>Exposure: who is at risk first</h3>
+<p><span class="tag">QUOTED</span>A Bitcoin address of the usual kind is a hash of a public key. The public key itself appears on chain only when the owner spends. Before that, an attacker sees only the hash. After that, the public key is visible forever. Project Eleven counts about 7.1 million BTC sitting on public keys that are already visible: early pay-to-public-key outputs, reused addresses and Taproot outputs, where the key is in the address by design.</p>
+<p><span class="tag">QUOTED</span>"Bunker mode", the phrase from an October 2026 post by an Ethereum researcher, means using that hash as a shield: keep funds on addresses that have never signed, and move what is left to a fresh one after every spend. It needs no new software. On Solana it protects nothing today, because there the address <b>is</b> the public key.</p>
+
+<h3>Where the shield is thin</h3>
+<p><span class="tag spec">SPECULATIVE</span>The shield has a gap, and the puzzle history shows its shape. When a never-signed address finally spends, its public key sits in the mempool for minutes before the transaction confirms. Bots have already raced puzzle solvers in that window, using classical search on keys that were small enough. Against an attacker who could break a full key in minutes, every spend from a bunker address would be such a race. Bunker mode protects coins at rest, not coins in motion. Fully closing the gap takes a new signature scheme.</p>
+
+<h3>Hash-based signatures</h3>
+<p><span class="tag">QUOTED</span>The oldest answer is also the plainest. A <b>Lamport</b> signature (1979) relies only on a hash function: the private key is a list of random secrets, the public key is their hashes, and signing reveals one secret per bit of the message. It can be used safely only once. <b>Winternitz</b> chains make it smaller. <b>Merkle trees</b> bind many one-time keys under one public key; XMSS and LMS do this and are standardised for stateful use, where the signer must never reuse a leaf. <b>SPHINCS+</b>, standardised by NIST in 2024 as SLH-DSA (FIPS 205), removes the state at the cost of size.</p>
+<div class="scroll"><table>
+<tr><th>Scheme</th><th>Rests on</th><th>Public key</th><th>Signature</th></tr>
+<tr><td>Schnorr / ECDSA on secp256k1 (today)</td><td>Elliptic-curve discrete log</td><td>32–33 bytes</td><td>64–72 bytes</td></tr>
+<tr><td>Lamport, 256-bit hash</td><td>Hash function only</td><td>16 KB</td><td>8 KB, one use</td></tr>
+<tr><td>SLH-DSA-128s (FIPS 205)</td><td>Hash function only</td><td>32 bytes</td><td>7,856 bytes</td></tr>
+<tr><td>ML-DSA-44 (FIPS 204, lattice)</td><td>Module lattices</td><td>1,312 bytes</td><td>2,420 bytes</td></tr>
+</table></div>
+<p><span class="tag">QUOTED</span>The appeal of the hash-based rows is the assumption column. Bitcoin already bets everything on SHA-256 for mining and addresses, and a quantum computer only weakens a good hash function by a square root (Grover's algorithm), which larger outputs absorb. A hash-based signature adds no new bet.</p>
+
+<h3>Thought experiment: the migration itself</h3>
+<p><span class="tag spec">SPECULATIVE</span>Suppose a chain adds a hash-based output type tomorrow. Four problems would remain.</p>
+<ol>
+<li><b>Size.</b> A 7.8 KB signature is about 120 times a Schnorr signature. Block space is the scarcest thing on Bitcoin. Either fees per spend rise sharply, or the chain finds ways to aggregate or discount these signatures. Each choice is a debate of its own.</li>
+<li><b>Time.</b> Every holder has to move their own coins, and each move is a spend. Millions of outputs moving through a limited block size takes months at best. If the migration starts after a credible threat appears, the queue itself becomes the danger.</li>
+<li><b>The lost coins.</b> Coins on exposed keys whose owners are gone cannot migrate. A chain must choose between leaving them for whoever builds the first big quantum computer, or freezing them by rule. One choice hands a prize to the attacker. The other breaks the promise that nobody can touch your coins. Neither is neutral.</li>
+<li><b>Recovery.</b> <span class="tag">QUOTED</span> On Ethereum, a 2024 proposal by Vitalik Buterin sketches an emergency fork that would disable elliptic-curve signatures and let owners prove control of their seed phrase with a zero-knowledge proof instead. Ethereum's account abstraction also lets a smart wallet switch signature schemes without moving funds. Bitcoin has neither path today. Its proposals, such as BIP-360, add new output types that holders must opt into.</li>
+</ol>
+<p><span class="tag spec">SPECULATIVE</span>Put together, the hard part of post-quantum migration is not the cryptography. Hash-based signatures have been understood since 1979. The hard part is coordination: a moving queue, a fee market and a moral question about coins with no owner, all solved before anyone can prove a deadline exists. The meter's job in that story is small but specific: show, in public and with proof, how much room the classical wall still leaves.</p>
+
+<h2 id="open"><span>05</span>Open questions</h2>
+<p>All <span class="tag spec">SPECULATIVE</span>. These are the questions the notes above lead to, and none of them can be settled by argument.</p>
+<ol>
+<li><b>Is there a gradient?</b> Does secp256k1 hide any structure that makes points near a discrete log distinguishable? Every shortcut fear reduces to this. What would even count as early evidence?</li>
+<li><b>Can a meter measure a shortcut?</b> If a better method appeared, it would show up as a ladder that suddenly bends. How should a public meter tell a real bend from a lucky run, and how many runs does it take to tell?</li>
+<li><b>What is the right unit of progress?</b> Bits per day, bits per dollar or bits per joule? Each tells a different story about the same wall.</li>
+<li><b>How would a quantum ladder be sourced?</b> Quantum records are rare, often small, and easy to overstate. What standard of proof should a second ladder require: the published key, the circuit, independent replication?</li>
+<li><b>How long does migration take?</b> Given real block sizes and real holder behaviour, how many months would moving exposed coins to hash-based outputs take? Can it be measured in advance with test networks?</li>
+<li><b>Who decides about lost coins?</b> Freezing exposed coins and leaving them both have costs. Is there a third design, such as a slow-release delay that gives absent owners time to prove themselves?</li>
+<li><b>Does colony memory matter?</b> If tame trails are kept across many hunts, how much faster does a long-lived meter get on new keys of the same size? Is that a fair thing for a meter to do, or does it blur what a single run means?</li>
+<li><b>When should the meter stop?</b> At some size a run costs more than any honest budget allows. Is the right ending a final expedition, a published projection, or a meter that keeps climbing one bit at a time for years?</li>
+</ol>
+
+<div class="q">The meter measures one thing: the cost of the best attack we know, today, on keys we made ourselves. Everything on this page is about the space around that number.</div>
+
+<h2 id="sources"><span>06</span>Sources</h2>
+<ul class="src">
+<li>J. M. Pollard, "Monte Carlo methods for index computation (mod p)", <i>Mathematics of Computation</i>, 1978. The kangaroo (lambda) method.</li>
+<li>P. C. van Oorschot and M. J. Wiener, "Parallel collision search with cryptanalytic applications", <i>Journal of Cryptology</i>, 1999. Distinguished points and linear parallel speed-up.</li>
+<li>D. J. Bernstein and T. Lange, "Computing small discrete logarithms faster", INDOCRYPT 2012. Precomputed tame tables reused across many keys.</li>
+<li>RCKangaroo, github.com/RetiredC/RCKangaroo: about 14.5 GH/s on an RTX 4090 and 19.3 on a 5090, K ≈ 1.15, ranges 32–170 bits, GPL-3.</li>
+<li>Bitcoin puzzle status: btcpuzzle.info and github.com/roadhero/Bitcoin-Puzzle-Info. #135 solved July 2026 with about 200 GPUs over about five months; #66 and #69 taken from the mempool by bots.</li>
+<li>Cloud GPU pricing: Vast.ai and RunPod public listings, RTX 4090 about $0.35–0.70 per hour (October 2026).</li>
+<li>M. Roetteler, M. Naehrig, K. Svore, K. Lauter, "Quantum resource estimates for computing elliptic curve discrete logarithms", ASIACRYPT 2017.</li>
+<li>Project Eleven: 1 BTC prize for a 15-bit elliptic-curve key on quantum hardware (April 2026); exposed-BTC count of 7,110,382 BTC (read 2026-10-09).</li>
+<li>"Bunker mode": Justin Drake's post on X, 7 October 2026.</li>
+<li>L. Lamport, "Constructing digital signatures from a one-way function", SRI technical report, 1979.</li>
+<li>NIST FIPS 204 (ML-DSA) and FIPS 205 (SLH-DSA), August 2024. NIST SP 800-208, stateful hash-based signatures (XMSS, LMS), 2020.</li>
+<li>V. Buterin, "How to hard-fork to save most users' funds in a quantum emergency", ethresear.ch, 2024.</li>
+<li>BIP-360, a proposed quantum-resistant output type for Bitcoin.</li>
+</ul>
+</div>
+</body>
+</html>

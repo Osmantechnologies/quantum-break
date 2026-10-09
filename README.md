@@ -39,6 +39,10 @@ The full write-up, including how a run works and what is measured versus project
 
 <img src="docs/whitepaper.webp" alt="The whitepaper" width="100%">
 
+## Research notes
+
+Long-form conceptual notes in [`research.html`](research.html): the colony as a distributed-search metaphor, the scaling and economics of GPU expeditions, post-quantum migration (hash-based signatures, "bunker mode"), and open questions. These are **speculative thought experiments**, not predictions or advice. Every claim is tagged measured, quoted, arithmetic or speculative.
+
 ## Run it
 
 Static files, no build step:
